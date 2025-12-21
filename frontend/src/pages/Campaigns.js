@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { Plus, Send, Calendar, Sparkles, Trash2, Edit } from 'lucide-react';
+import { Plus, Send, Calendar, Sparkles, Trash2, Edit, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -167,6 +167,27 @@ const Campaigns = () => {
     setShowEditDialog(true);
   };
 
+  const handleDuplicateCampaign = async (campaign) => {
+    try {
+      const duplicatedData = {
+        title: `${campaign.title} (${t('campaigns.copy')})`,
+        subject: campaign.subject,
+        content_html: campaign.content_html,
+        language: campaign.language,
+        scheduled_at: null, // Reset scheduled_at for duplicated campaign
+        target_groups: campaign.target_groups || [],
+        target_tags: campaign.target_tags || []
+      };
+      
+      await axios.post(`${API}/campaigns`, duplicatedData);
+      toast.success(t('campaigns.campaignDuplicated'));
+      fetchCampaigns();
+    } catch (error) {
+      console.error('Error duplicating campaign:', error);
+      toast.error(t('campaigns.errorDuplicating'));
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       title: '',
@@ -256,30 +277,45 @@ const Campaigns = () => {
                   )}
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {/* Edit button - available for all campaigns */}
+                  <Button
+                    size="sm"
+                    onClick={() => openEditDialog(campaign)}
+                    variant="outline"
+                    className="flex-1 min-w-[100px]"
+                    data-testid={`edit-campaign-${index}`}
+                  >
+                    <Edit className="mr-1 h-3 w-3" />
+                    {t('campaigns.edit')}
+                  </Button>
+                  
+                  {/* Duplicate button - available for all campaigns */}
+                  <Button
+                    size="sm"
+                    onClick={() => handleDuplicateCampaign(campaign)}
+                    variant="outline"
+                    className="flex-1 min-w-[100px]"
+                    data-testid={`duplicate-campaign-${index}`}
+                  >
+                    <Copy className="mr-1 h-3 w-3" />
+                    {t('campaigns.duplicate')}
+                  </Button>
+                  
+                  {/* Send button - only for draft campaigns */}
                   {campaign.status === 'draft' && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => openEditDialog(campaign)}
-                        variant="outline"
-                        className="flex-1"
-                        data-testid={`edit-campaign-${index}`}
-                      >
-                        <Edit className="mr-1 h-3 w-3" />
-                        {t('campaigns.edit')}
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => handleSendCampaign(campaign.id)}
-                        className="flex-1 bg-primary hover:bg-primary/90"
-                        data-testid={`send-campaign-${index}`}
-                      >
-                        <Send className="mr-1 h-3 w-3" />
-                        {t('campaigns.send')}
-                      </Button>
-                    </>
+                    <Button
+                      size="sm"
+                      onClick={() => handleSendCampaign(campaign.id)}
+                      className="flex-1 min-w-[100px] bg-primary hover:bg-primary/90"
+                      data-testid={`send-campaign-${index}`}
+                    >
+                      <Send className="mr-1 h-3 w-3" />
+                      {t('campaigns.send')}
+                    </Button>
                   )}
+                  
+                  {/* Delete button - not available for sent/sending campaigns */}
                   {campaign.status !== 'sent' && campaign.status !== 'sending' && (
                     <Button
                       size="sm"

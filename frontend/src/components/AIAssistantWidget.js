@@ -159,16 +159,16 @@ const AIAssistantWidget = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
+          className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 w-12 h-12 md:w-14 md:h-14 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group hover:scale-110"
           aria-label="Open AI Assistant"
         >
-          <Sparkles className="h-6 w-6 group-hover:animate-spin" />
+          <Sparkles className="h-5 w-5 md:h-6 md:w-6 group-hover:animate-spin" />
         </button>
       )}
 
       {/* Chat Widget */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-96 h-[600px] flex flex-col glass rounded-lg shadow-2xl border border-primary/30 overflow-hidden">
+        <div className="fixed inset-4 md:inset-auto md:bottom-6 md:right-6 z-50 w-auto md:w-96 h-auto md:h-[600px] max-h-[calc(100vh-2rem)] md:max-h-[600px] flex flex-col glass rounded-lg shadow-2xl border border-primary/30 overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-4 flex justify-between items-center">
             <div className="flex items-center gap-2">

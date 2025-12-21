@@ -167,6 +167,8 @@ const resources = {
         noCampaigns: 'Aucune campagne. Cliquez sur "Créer une campagne" pour commencer.',
         sent_count: 'Envoyés',
         edit: 'Modifier',
+        duplicate: 'Dupliquer',
+        copy: 'Copie',
         send: 'Envoyer',
         delete: 'Supprimer',
         aiGenerate: 'Générer avec l\'IA',
@@ -189,7 +191,9 @@ const resources = {
         errorDeleting: 'Erreur lors de la suppression de la campagne',
         errorSending: 'Erreur lors de l\'envoi de la campagne',
         errorGenerating: 'Erreur lors de la génération',
-        confirmDelete: 'Voulez-vous vraiment supprimer cette campagne ?'
+        errorDuplicating: 'Erreur lors de la duplication de la campagne',
+        confirmDelete: 'Voulez-vous vraiment supprimer cette campagne ?',
+        campaignDuplicated: 'Campagne dupliquée avec succès'
       },
       whatsapp: {
         title: 'Campagnes WhatsApp',
@@ -1114,6 +1118,8 @@ const resources = {
         noCampaigns: 'No campaigns. Click "Create campaign" to get started.',
         sent_count: 'Sent',
         edit: 'Edit',
+        duplicate: 'Duplicate',
+        copy: 'Copy',
         send: 'Send',
         delete: 'Delete',
         aiGenerate: 'Generate with AI',
@@ -1136,7 +1142,9 @@ const resources = {
         errorDeleting: 'Error deleting campaign',
         errorSending: 'Error sending campaign',
         errorGenerating: 'Error generating content',
-        confirmDelete: 'Are you sure you want to delete this campaign?'
+        errorDuplicating: 'Error duplicating campaign',
+        confirmDelete: 'Are you sure you want to delete this campaign?',
+        campaignDuplicated: 'Campaign duplicated successfully'
       },
       whatsapp: {
         title: 'WhatsApp Campaigns',
@@ -2010,6 +2018,8 @@ const resources = {
         noCampaigns: 'Keine Kampagnen. Klicken Sie auf "Kampagne erstellen", um zu beginnen.',
         sent_count: 'Gesendet',
         edit: 'Bearbeiten',
+        duplicate: 'Duplizieren',
+        copy: 'Kopie',
         send: 'Senden',
         delete: 'Löschen',
         aiGenerate: 'Mit KI generieren',
@@ -2032,7 +2042,9 @@ const resources = {
         errorDeleting: 'Fehler beim Löschen der Kampagne',
         errorSending: 'Fehler beim Senden der Kampagne',
         errorGenerating: 'Fehler bei der Generierung',
-        confirmDelete: 'Sind Sie sicher, dass Sie diese Kampagne löschen möchten?'
+        errorDuplicating: 'Fehler beim Duplizieren der Kampagne',
+        confirmDelete: 'Sind Sie sicher, dass Sie diese Kampagne löschen möchten?',
+        campaignDuplicated: 'Kampagne erfolgreich dupliziert'
       },
       whatsapp: {
         title: 'WhatsApp-Kampagnen',
