@@ -6271,12 +6271,25 @@ async def update_attendance(
 
 app.include_router(api_router)
 
+# CORS configuration
+# Note: When allow_credentials=True, you MUST specify exact origins (cannot use '*')
+cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if cors_origins_env:
+    # Split by comma and strip whitespace
+    cors_origins_list = [origin.strip() for origin in cors_origins_env.split(',') if origin.strip()]
+else:
+    # Default fallback - but this should be set in production!
+    logger.warning("CORS_ORIGINS not set! Using default origins. Set CORS_ORIGINS environment variable.")
+    cors_origins_list = ['http://localhost:3000', 'http://localhost:3001']
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
+    allow_origins=cors_origins_list,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
 )
 
 @app.on_event("shutdown")
