@@ -1,0 +1,316 @@
+{
+  "gift_cards": {
+    "total_tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "success_rate": 100.0,
+    "results": [
+      {
+        "test": "Create Gift Card",
+        "success": true,
+        "message": "Successfully created gift card with code: 91830C04",
+        "timestamp": "2025-10-31T15:59:06.903704+00:00",
+        "details": {
+          "gift_card_id": "b8f6b234-3531-47ff-9afa-795ca96ea95f",
+          "amount": 100.0,
+          "currency": "CHF"
+        }
+      },
+      {
+        "test": "List Gift Cards",
+        "success": true,
+        "message": "Successfully retrieved 4 gift cards",
+        "timestamp": "2025-10-31T15:59:07.416526+00:00",
+        "details": {
+          "total_cards": 4
+        }
+      },
+      {
+        "test": "Validate Gift Card",
+        "success": true,
+        "message": "Successfully validated gift card: 91830C04",
+        "timestamp": "2025-10-31T15:59:07.925071+00:00",
+        "details": {
+          "code": "91830C04",
+          "status": "active",
+          "amount": 100.0
+        }
+      },
+      {
+        "test": "Redeem Gift Card",
+        "success": true,
+        "message": "Successfully redeemed gift card: 91830C04",
+        "timestamp": "2025-10-31T15:59:08.439055+00:00",
+        "details": {
+          "code": "91830C04",
+          "amount_used": 50,
+          "response": {
+            "id": "b8f6b234-3531-47ff-9afa-795ca96ea95f",
+            "code": "91830C04",
+            "amount": 100.0,
+            "currency": "CHF",
+            "recipient_name": "Marie Test",
+            "recipient_email": "marie@test.com",
+            "personal_message": null,
+            "sender_name": "Test User",
+            "sender_email": "test@boosttribe.com",
+            "sender_id": "c8353966-33c6-4145-80d4-71f174f4a481",
+            "expires_at": "2026-10-31T15:59:06.890962Z",
+            "is_active": true,
+            "status": "active",
+            "used_at": "2025-10-31T15:59:08.435261Z",
+            "used_by": "client@test.com",
+            "remaining_balance": 50.0,
+            "design_template": "default",
+            "design_color": "#8B5CF6",
+            "created_at": "2025-10-31T15:59:06.900799Z",
+            "sent_at": null
+          }
+        }
+      }
+    ]
+  },
+  "discounts": {
+    "total_tests": 7,
+    "passed": 1,
+    "failed": 6,
+    "success_rate": 14.285714285714285,
+    "results": [
+      {
+        "test": "Create Discount",
+        "success": false,
+        "message": "Discount created but data incorrect",
+        "timestamp": "2025-10-31T15:59:09.212241+00:00",
+        "details": {
+          "response": {
+            "id": "5d59ab13-65a0-4042-939d-41d443d16bc5",
+            "code": "SUMMER1761926349",
+            "discount_type": "percentage",
+            "discount_value": 20.0,
+            "currency": "CHF",
+            "name": "Summer Sale",
+            "description": null,
+            "start_date": "2025-10-31T15:59:09.200796Z",
+            "end_date": "2025-11-30T15:59:09.200807Z",
+            "is_active": true,
+            "usage_limit": 100,
+            "usage_count": 0,
+            "per_user_limit": 1,
+            "applicable_to": [],
+            "minimum_purchase": null,
+            "target_contacts": [],
+            "target_tags": [],
+            "created_by": "c8353966-33c6-4145-80d4-71f174f4a481",
+            "created_at": "2025-10-31T15:59:09.209473Z",
+            "updated_at": "2025-10-31T15:59:09.209475Z"
+          }
+        }
+      },
+      {
+        "test": "List Discounts",
+        "success": true,
+        "message": "Successfully retrieved 2 discounts",
+        "timestamp": "2025-10-31T15:59:09.721986+00:00",
+        "details": {
+          "total_discounts": 2
+        }
+      },
+      {
+        "test": "Get Specific Discount",
+        "success": false,
+        "message": "No discounts available",
+        "timestamp": "2025-10-31T15:59:10.222100+00:00",
+        "details": {}
+      },
+      {
+        "test": "Update Discount",
+        "success": false,
+        "message": "No discounts available",
+        "timestamp": "2025-10-31T15:59:10.722217+00:00",
+        "details": {}
+      },
+      {
+        "test": "Validate Discount Code",
+        "success": false,
+        "message": "No discounts available",
+        "timestamp": "2025-10-31T15:59:11.222337+00:00",
+        "details": {}
+      },
+      {
+        "test": "Delete Discount",
+        "success": false,
+        "message": "No discounts available",
+        "timestamp": "2025-10-31T15:59:11.722467+00:00",
+        "details": {}
+      },
+      {
+        "test": "Create Fixed Discount",
+        "success": false,
+        "message": "Fixed discount created but data incorrect",
+        "timestamp": "2025-10-31T15:59:12.233489+00:00",
+        "details": {
+          "response": {
+            "id": "48f97189-34a6-4947-bb48-b37c549ebb29",
+            "code": "FIXED1761926352",
+            "discount_type": "fixed_amount",
+            "discount_value": 50.0,
+            "currency": "CHF",
+            "name": "Fixed 50 CHF Off",
+            "description": null,
+            "start_date": "2025-10-31T15:59:12.222588Z",
+            "end_date": "2025-11-30T15:59:12.222606Z",
+            "is_active": true,
+            "usage_limit": 50,
+            "usage_count": 0,
+            "per_user_limit": 1,
+            "applicable_to": [],
+            "minimum_purchase": null,
+            "target_contacts": [],
+            "target_tags": [],
+            "created_by": "c8353966-33c6-4145-80d4-71f174f4a481",
+            "created_at": "2025-10-31T15:59:12.230276Z",
+            "updated_at": "2025-10-31T15:59:12.230278Z"
+          }
+        }
+      }
+    ]
+  },
+  "referrals": {
+    "total_tests": 4,
+    "passed": 4,
+    "failed": 0,
+    "success_rate": 100.0,
+    "results": [
+      {
+        "test": "Create Referral",
+        "success": true,
+        "message": "Successfully created referral with code: 25EA1204",
+        "timestamp": "2025-10-31T15:59:13.030817+00:00",
+        "details": {
+          "referral_id": "442b1f4a-7dd4-402b-9b21-0ee85057e725",
+          "status": "pending",
+          "referred_email": "friend1761926353@test.com"
+        }
+      },
+      {
+        "test": "List My Referrals",
+        "success": true,
+        "message": "Successfully retrieved 3 referrals",
+        "timestamp": "2025-10-31T15:59:13.540517+00:00",
+        "details": {
+          "total_referrals": 3
+        }
+      },
+      {
+        "test": "Get Referral Stats",
+        "success": true,
+        "message": "Successfully retrieved referral stats",
+        "timestamp": "2025-10-31T15:59:14.055230+00:00",
+        "details": {
+          "total_referrals": 3,
+          "referral_code": "25EA1204"
+        }
+      },
+      {
+        "test": "Complete Referral",
+        "success": true,
+        "message": "Successfully completed referral",
+        "timestamp": "2025-10-31T15:59:14.572164+00:00",
+        "details": {
+          "referral_id": "442b1f4a-7dd4-402b-9b21-0ee85057e725"
+        }
+      }
+    ]
+  },
+  "ad_chat": {
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "success_rate": 100.0,
+    "results": [
+      {
+        "test": "Start Ad Chat",
+        "success": true,
+        "message": "Successfully started ad chat with session: 6fcb6696-7991-447b-8cf7-c1edc8e3dc5a",
+        "timestamp": "2025-10-31T15:59:15.380736+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "ad_platform": "facebook",
+          "visitor_name": "John Visitor"
+        }
+      },
+      {
+        "test": "Send Visitor Message",
+        "success": true,
+        "message": "Successfully sent visitor message",
+        "timestamp": "2025-10-31T15:59:15.890762+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "sender": "visitor"
+        }
+      },
+      {
+        "test": "Send Agent Message",
+        "success": true,
+        "message": "Successfully sent agent message",
+        "timestamp": "2025-10-31T15:59:16.401341+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "sender": "agent"
+        }
+      },
+      {
+        "test": "List Chats",
+        "success": true,
+        "message": "Successfully retrieved 5 chats",
+        "timestamp": "2025-10-31T15:59:16.911257+00:00",
+        "details": {
+          "total_chats": 5
+        }
+      },
+      {
+        "test": "Filter Chats by Status",
+        "success": true,
+        "message": "Successfully filtered chats by status: 1 active chats",
+        "timestamp": "2025-10-31T15:59:17.420686+00:00",
+        "details": {
+          "active_chats": 1
+        }
+      },
+      {
+        "test": "Get Specific Chat",
+        "success": true,
+        "message": "Successfully retrieved chat with messages",
+        "timestamp": "2025-10-31T15:59:17.930369+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "message_count": 3
+        }
+      },
+      {
+        "test": "Update Chat",
+        "success": true,
+        "message": "Successfully updated chat",
+        "timestamp": "2025-10-31T15:59:18.441580+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "new_status": "resolved",
+          "lead_score": 85
+        }
+      },
+      {
+        "test": "Convert Chat to Contact",
+        "success": true,
+        "message": "Successfully converted chat to contact",
+        "timestamp": "2025-10-31T15:59:18.955138+00:00",
+        "details": {
+          "chat_id": "23b52c25-05f2-4129-995e-43610ff39635",
+          "response": {
+            "message": "Chat converted to contact successfully",
+            "contact_id": "7fc718fb-578f-4531-bea6-a47ee4fcade4"
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,430 @@
+{
+  "Authentication": {
+    "success": false,
+    "summary": {
+      "total_tests": 10,
+      "passed": 6,
+      "failed": 4,
+      "success_rate": 60.0,
+      "results": [
+        {
+          "test": "Register First User (Admin)",
+          "success": false,
+          "message": "Registration failed with status 400",
+          "timestamp": "2025-10-31T12:13:30.428661+00:00",
+          "details": {
+            "response": "{\"detail\":\"Email already registered\"}"
+          }
+        },
+        {
+          "test": "Login Success",
+          "success": true,
+          "message": "Successfully logged in user: Sarah Martinez",
+          "timestamp": "2025-10-31T12:13:31.162434+00:00",
+          "details": {
+            "user_id": "27510c50-6eea-411c-be29-39839fe5dc00",
+            "last_login": "2025-10-31T12:12:32.099086Z"
+          }
+        },
+        {
+          "test": "Get Me Valid Token",
+          "success": false,
+          "message": "No admin token available for testing",
+          "timestamp": "2025-10-31T12:13:31.662548+00:00",
+          "details": {}
+        },
+        {
+          "test": "Register Second User (Regular)",
+          "success": false,
+          "message": "Registration failed with status 400",
+          "timestamp": "2025-10-31T12:13:32.170517+00:00",
+          "details": {
+            "response": "{\"detail\":\"Email already registered\"}"
+          }
+        },
+        {
+          "test": "Duplicate Email Registration",
+          "success": true,
+          "message": "Correctly rejected duplicate email registration",
+          "timestamp": "2025-10-31T12:13:32.678741+00:00",
+          "details": {
+            "status_code": 400,
+            "message": "Email already registered"
+          }
+        },
+        {
+          "test": "Login Wrong Password",
+          "success": true,
+          "message": "Correctly rejected login with wrong password",
+          "timestamp": "2025-10-31T12:13:33.410192+00:00",
+          "details": {
+            "status_code": 401,
+            "message": "Invalid email or password"
+          }
+        },
+        {
+          "test": "Login Nonexistent Email",
+          "success": true,
+          "message": "Correctly rejected login with nonexistent email",
+          "timestamp": "2025-10-31T12:13:33.917973+00:00",
+          "details": {
+            "status_code": 401,
+            "message": "Invalid email or password"
+          }
+        },
+        {
+          "test": "Get Me Invalid Token",
+          "success": true,
+          "message": "Correctly rejected invalid token",
+          "timestamp": "2025-10-31T12:13:34.424781+00:00",
+          "details": {
+            "status_code": 401,
+            "message": "Invalid token"
+          }
+        },
+        {
+          "test": "Get Me No Token",
+          "success": true,
+          "message": "Correctly rejected request without token",
+          "timestamp": "2025-10-31T12:13:34.931335+00:00",
+          "details": {
+            "status_code": 403
+          }
+        },
+        {
+          "test": "JWT Token Structure",
+          "success": false,
+          "message": "No admin token available for testing",
+          "timestamp": "2025-10-31T12:13:35.431450+00:00",
+          "details": {}
+        }
+      ]
+    }
+  },
+  "Contacts Management": {
+    "success": false,
+    "summary": {
+      "total_tests": 4,
+      "passed": 1,
+      "failed": 3,
+      "success_rate": 25.0,
+      "results": [
+        {
+          "test": "Create Contact",
+          "success": false,
+          "message": "Failed to create contact: 400",
+          "timestamp": "2025-10-31T12:13:36.238213+00:00",
+          "details": {
+            "response": "{\"detail\":\"Contact with this email already exists\"}"
+          }
+        },
+        {
+          "test": "Get Contacts",
+          "success": true,
+          "message": "Successfully retrieved 2 contacts",
+          "timestamp": "2025-10-31T12:13:36.748147+00:00",
+          "details": {
+            "total_contacts": 2
+          }
+        },
+        {
+          "test": "Update Contact",
+          "success": false,
+          "message": "No contacts available to update",
+          "timestamp": "2025-10-31T12:13:37.248256+00:00",
+          "details": {}
+        },
+        {
+          "test": "Bulk Message",
+          "success": false,
+          "message": "No contacts available for bulk message",
+          "timestamp": "2025-10-31T12:13:37.748377+00:00",
+          "details": {}
+        }
+      ]
+    }
+  },
+  "Catalog & Reservations": {
+    "success": true,
+    "summary": {
+      "total_tests": 10,
+      "passed": 10,
+      "failed": 0,
+      "success_rate": 100.0,
+      "results": [
+        {
+          "test": "Setup Admin Authentication",
+          "success": true,
+          "message": "Admin user created and authenticated",
+          "timestamp": "2025-10-31T12:13:38.509318+00:00",
+          "details": {
+            "user_id": "ce8b30f8-c549-4ca7-b401-128e1284b376",
+            "role": "user"
+          }
+        },
+        {
+          "test": "Create Catalog Course",
+          "success": true,
+          "message": "Successfully created course: Advanced Dance Masterclass",
+          "timestamp": "2025-10-31T12:13:38.567579+00:00",
+          "details": {
+            "course_id": "1df0107d-12a3-43ee-ba3f-516f500033e0",
+            "max_attendees": 10
+          }
+        },
+        {
+          "test": "Create Catalog Product",
+          "success": true,
+          "message": "Successfully created product: Afroboost T-Shirt",
+          "timestamp": "2025-10-31T12:13:39.087562+00:00",
+          "details": {
+            "product_id": "fe81d662-eea1-42c1-baa4-1cf0be93c5a8",
+            "stock": 50
+          }
+        },
+        {
+          "test": "Get Catalog Items",
+          "success": true,
+          "message": "Successfully retrieved 15 catalog items",
+          "timestamp": "2025-10-31T12:13:39.595077+00:00",
+          "details": {
+            "total_items": 15,
+            "has_course": true,
+            "has_product": true
+          }
+        },
+        {
+          "test": "Create Reservation Success",
+          "success": true,
+          "message": "Successfully created reservation for Maria Rodriguez",
+          "timestamp": "2025-10-31T12:13:40.397421+00:00",
+          "details": {
+            "reservation_id": "9cc08cc0-d23a-4e81-bb9f-5c5bd6af197a",
+            "quantity": 3,
+            "total_price": 450.0
+          }
+        },
+        {
+          "test": "Create Second Reservation",
+          "success": true,
+          "message": "Successfully created second reservation for Carlos Silva",
+          "timestamp": "2025-10-31T12:13:41.134266+00:00",
+          "details": {
+            "reservation_id": "5ac5d30e-9562-489c-a2ae-98426c6c305f",
+            "quantity": 3
+          }
+        },
+        {
+          "test": "Create Reservation Exceed Capacity",
+          "success": true,
+          "message": "Correctly rejected reservation exceeding capacity",
+          "timestamp": "2025-10-31T12:13:41.641741+00:00",
+          "details": {
+            "status_code": 400,
+            "message": "Not enough places available"
+          }
+        },
+        {
+          "test": "Get Reservations Authenticated",
+          "success": true,
+          "message": "Successfully retrieved 2 reservations",
+          "timestamp": "2025-10-31T12:13:42.149699+00:00",
+          "details": {
+            "total_reservations": 2
+          }
+        },
+        {
+          "test": "Update Reservation Status",
+          "success": true,
+          "message": "Successfully updated reservation status to confirmed",
+          "timestamp": "2025-10-31T12:13:42.665026+00:00",
+          "details": {
+            "reservation_id": "9cc08cc0-d23a-4e81-bb9f-5c5bd6af197a",
+            "new_status": "confirmed"
+          }
+        },
+        {
+          "test": "Email Confirmation Logs",
+          "success": true,
+          "message": "Email system active - Resend API activity detected",
+          "timestamp": "2025-10-31T12:13:43.172411+00:00",
+          "details": {
+            "log_check": "Resend API activity found in logs"
+          }
+        }
+      ]
+    }
+  },
+  "WhatsApp Advanced Campaigns": {
+    "success": true,
+    "summary": {
+      "total_tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "success_rate": 100.0,
+      "results": [
+        {
+          "test": "Create Template",
+          "success": true,
+          "message": "Successfully created template: Welcome Message",
+          "timestamp": "2025-10-31T12:13:43.970023+00:00",
+          "details": {
+            "template_id": "3a5164d1-977c-4d21-b28a-843e5cc9860c",
+            "variables": [
+              "nom"
+            ]
+          }
+        },
+        {
+          "test": "Get Templates",
+          "success": true,
+          "message": "Successfully retrieved 1 templates",
+          "timestamp": "2025-10-31T12:13:44.481440+00:00",
+          "details": {
+            "total_templates": 1
+          }
+        },
+        {
+          "test": "Create Advanced Campaign",
+          "success": true,
+          "message": "Successfully created campaign: Nouvelle Session de Danse",
+          "timestamp": "2025-10-31T12:13:44.992180+00:00",
+          "details": {
+            "campaign_id": "f99ca2a5-07d1-436a-8ad3-8d4d72411fc0",
+            "status": "draft"
+          }
+        },
+        {
+          "test": "Send Campaign",
+          "success": true,
+          "message": "Campaign send initiated successfully",
+          "timestamp": "2025-10-31T12:13:45.502851+00:00",
+          "details": {
+            "campaign_id": "f99ca2a5-07d1-436a-8ad3-8d4d72411fc0",
+            "message": "Campaign sent successfully (SIMULATION MODE)"
+          }
+        },
+        {
+          "test": "Get Campaign Analytics",
+          "success": true,
+          "message": "Successfully retrieved campaign analytics",
+          "timestamp": "2025-10-31T12:13:46.014478+00:00",
+          "details": {
+            "campaign_id": "f99ca2a5-07d1-436a-8ad3-8d4d72411fc0",
+            "summary": {
+              "total": 1,
+              "sent": 1,
+              "delivered": 1,
+              "read": 0,
+              "replied": 0,
+              "clicked": 0,
+              "payment_completed": 0
+            }
+          }
+        }
+      ]
+    }
+  },
+  "AI Assistant": {
+    "success": true,
+    "summary": {
+      "total_tests": 3,
+      "passed": 3,
+      "failed": 0,
+      "success_rate": 100.0,
+      "results": [
+        {
+          "test": "AI Chat",
+          "success": true,
+          "message": "AI chat successful - received response",
+          "timestamp": "2025-10-31T12:13:53.776983+00:00",
+          "details": {
+            "session_id": "ed229402-0090-41c6-9291-14434ba81aa6",
+            "has_suggestions": true
+          }
+        },
+        {
+          "test": "Get Sessions",
+          "success": true,
+          "message": "Successfully retrieved 1 AI sessions",
+          "timestamp": "2025-10-31T12:13:54.285063+00:00",
+          "details": {
+            "total_sessions": 1
+          }
+        },
+        {
+          "test": "Get Conversation History",
+          "success": true,
+          "message": "Successfully retrieved conversation history with 2 messages",
+          "timestamp": "2025-10-31T12:13:54.793522+00:00",
+          "details": {
+            "session_id": "ed229402-0090-41c6-9291-14434ba81aa6",
+            "message_count": 2
+          }
+        }
+      ]
+    }
+  },
+  "Reminders & Automation": {
+    "success": true,
+    "summary": {
+      "total_tests": 5,
+      "passed": 5,
+      "failed": 0,
+      "success_rate": 100.0,
+      "results": [
+        {
+          "test": "Create Reminder",
+          "success": true,
+          "message": "Successfully created reminder: Rappel Session de Danse",
+          "timestamp": "2025-10-31T12:13:55.582609+00:00",
+          "details": {
+            "reminder_id": "70773cb2-0a41-4193-b9d1-517eac7a54af",
+            "channels": [
+              "email",
+              "whatsapp"
+            ]
+          }
+        },
+        {
+          "test": "Get Reminders",
+          "success": true,
+          "message": "Successfully retrieved 1 reminders",
+          "timestamp": "2025-10-31T12:13:56.090224+00:00",
+          "details": {
+            "total_reminders": 1
+          }
+        },
+        {
+          "test": "Create Automation Rule",
+          "success": true,
+          "message": "Successfully created automation rule: Bienvenue Nouveau Contact",
+          "timestamp": "2025-10-31T12:13:56.598078+00:00",
+          "details": {
+            "rule_id": "bdf97dde-8803-4918-972d-bffdd731f8ca",
+            "trigger": "new_contact"
+          }
+        },
+        {
+          "test": "Get Automation Rules",
+          "success": true,
+          "message": "Successfully retrieved 1 automation rules",
+          "timestamp": "2025-10-31T12:13:57.106150+00:00",
+          "details": {
+            "total_rules": 1
+          }
+        },
+        {
+          "test": "Toggle Automation Rule",
+          "success": true,
+          "message": "Successfully toggled automation rule",
+          "timestamp": "2025-10-31T12:13:57.613444+00:00",
+          "details": {
+            "rule_id": "bdf97dde-8803-4918-972d-bffdd731f8ca",
+            "new_status": "disabled"
+          }
+        }
+      ]
+    }
+  }
+}

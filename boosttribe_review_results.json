@@ -1,0 +1,124 @@
+{
+  "summary": {
+    "total_tests": 9,
+    "passed": 5,
+    "failed": 4,
+    "success_rate": 55.55555555555556
+  },
+  "test_results": [
+    {
+      "test": "Admin Login",
+      "success": false,
+      "message": "Login failed with HTTP 401",
+      "timestamp": "2025-11-01T12:40:01.649841+00:00",
+      "details": {
+        "response_text": "{\"detail\":\"Invalid email or password\"}"
+      }
+    },
+    {
+      "test": "Forgot Password",
+      "success": true,
+      "message": "Password reset request successful",
+      "timestamp": "2025-11-01T12:40:02.926732+00:00",
+      "details": {
+        "status_code": 200,
+        "message": "If your email is registered, you will receive a password reset link",
+        "email": "contact.artboost@gmail.com"
+      }
+    },
+    {
+      "test": "Reset Password (Test Token)",
+      "success": true,
+      "message": "Correctly rejected invalid test token",
+      "timestamp": "2025-11-01T12:40:03.937687+00:00",
+      "details": {
+        "status_code": 400,
+        "message": "Invalid or expired reset token",
+        "expected_behavior": "Should reject invalid tokens"
+      }
+    },
+    {
+      "test": "Create Catalog Item",
+      "success": false,
+      "message": "No admin token available",
+      "timestamp": "2025-11-01T12:40:04.937845+00:00",
+      "details": {}
+    },
+    {
+      "test": "List Catalog Items",
+      "success": false,
+      "message": "No admin token available",
+      "timestamp": "2025-11-01T12:40:05.937989+00:00",
+      "details": {}
+    },
+    {
+      "test": "Delete Catalog Item",
+      "success": false,
+      "message": "No admin token or created items available",
+      "timestamp": "2025-11-01T12:40:06.938136+00:00",
+      "details": {}
+    },
+    {
+      "test": "Start Public Chat",
+      "success": true,
+      "message": "Successfully started chat session: e2c0ac6a-6fdf-4a73-a590-be621e3c5a82",
+      "timestamp": "2025-11-01T12:40:07.953950+00:00",
+      "details": {
+        "chat_id": "e2c0ac6a-6fdf-4a73-a590-be621e3c5a82",
+        "ad_platform": "facebook",
+        "visitor_name": "Test User",
+        "ai_response": "No AI response"
+      }
+    },
+    {
+      "test": "Send Chat Message",
+      "success": true,
+      "message": "Successfully sent message to chat: e2c0ac6a-6fdf-4a73-a590-be621e3c5a82",
+      "timestamp": "2025-11-01T12:40:08.969305+00:00",
+      "details": {
+        "chat_id": "e2c0ac6a-6fdf-4a73-a590-be621e3c5a82",
+        "message_content": "Quels sont vos tarifs?",
+        "ai_response": "No AI response",
+        "status_code": 200
+      }
+    },
+    {
+      "test": "Verify API Keys",
+      "success": true,
+      "message": "API Keys verification complete: 0/4 keys configured",
+      "timestamp": "2025-11-01T12:40:09.969560+00:00",
+      "details": {
+        "EMERGENT_LLM_KEY": {
+          "present": false,
+          "value": null,
+          "in_backend_env": true
+        },
+        "RESEND_API_KEY": {
+          "present": false,
+          "value": null,
+          "in_backend_env": true
+        },
+        "STRIPE_KEYS": {
+          "publishable_present": false,
+          "secret_present": false
+        }
+      }
+    }
+  ],
+  "endpoints_tested": [
+    "POST /api/auth/login",
+    "POST /api/auth/forgot-password",
+    "POST /api/auth/reset-password",
+    "POST /api/catalog",
+    "GET /api/catalog",
+    "DELETE /api/catalog/{id}",
+    "POST /api/ad-chat/start",
+    "POST /api/ad-chat/{id}/message"
+  ],
+  "api_keys_checked": [
+    "EMERGENT_LLM_KEY",
+    "RESEND_API_KEY",
+    "STRIPE_PUBLISHABLE_KEY",
+    "STRIPE_SECRET_KEY"
+  ]
+}

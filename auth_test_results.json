@@ -1,0 +1,109 @@
+{
+  "total_tests": 10,
+  "passed": 10,
+  "failed": 0,
+  "success_rate": 100.0,
+  "results": [
+    {
+      "test": "Register First User (Admin)",
+      "success": true,
+      "message": "Successfully registered admin user: Sarah Martinez",
+      "timestamp": "2025-10-30T17:49:29.299400+00:00",
+      "details": {
+        "user_id": "27510c50-6eea-411c-be29-39839fe5dc00",
+        "email": "sarah.martinez@afroboost.com",
+        "role": "admin"
+      }
+    },
+    {
+      "test": "Login Success",
+      "success": true,
+      "message": "Successfully logged in user: Sarah Martinez",
+      "timestamp": "2025-10-30T17:49:30.039976+00:00",
+      "details": {
+        "user_id": "27510c50-6eea-411c-be29-39839fe5dc00",
+        "last_login": null
+      }
+    },
+    {
+      "test": "Get Me Valid Token",
+      "success": true,
+      "message": "Successfully retrieved user info: Sarah Martinez",
+      "timestamp": "2025-10-30T17:49:30.558637+00:00",
+      "details": {
+        "user_id": "27510c50-6eea-411c-be29-39839fe5dc00",
+        "email": "sarah.martinez@afroboost.com",
+        "role": "admin"
+      }
+    },
+    {
+      "test": "Register Second User (Regular)",
+      "success": true,
+      "message": "Successfully registered regular user: David Johnson",
+      "timestamp": "2025-10-30T17:49:31.300957+00:00",
+      "details": {
+        "user_id": "7c2d21dc-622b-4024-b86c-6ed6a76deee9",
+        "email": "david.johnson@afroboost.com",
+        "role": "user"
+      }
+    },
+    {
+      "test": "Duplicate Email Registration",
+      "success": true,
+      "message": "Correctly rejected duplicate email registration",
+      "timestamp": "2025-10-30T17:49:31.813881+00:00",
+      "details": {
+        "status_code": 400,
+        "message": "Email already registered"
+      }
+    },
+    {
+      "test": "Login Wrong Password",
+      "success": true,
+      "message": "Correctly rejected login with wrong password",
+      "timestamp": "2025-10-30T17:49:32.548785+00:00",
+      "details": {
+        "status_code": 401,
+        "message": "Invalid email or password"
+      }
+    },
+    {
+      "test": "Login Nonexistent Email",
+      "success": true,
+      "message": "Correctly rejected login with nonexistent email",
+      "timestamp": "2025-10-30T17:49:33.060421+00:00",
+      "details": {
+        "status_code": 401,
+        "message": "Invalid email or password"
+      }
+    },
+    {
+      "test": "Get Me Invalid Token",
+      "success": true,
+      "message": "Correctly rejected invalid token",
+      "timestamp": "2025-10-30T17:49:33.570153+00:00",
+      "details": {
+        "status_code": 401,
+        "message": "Invalid token"
+      }
+    },
+    {
+      "test": "Get Me No Token",
+      "success": true,
+      "message": "Correctly rejected request without token",
+      "timestamp": "2025-10-30T17:49:34.078017+00:00",
+      "details": {
+        "status_code": 403
+      }
+    },
+    {
+      "test": "JWT Token Structure",
+      "success": true,
+      "message": "JWT token has correct structure (3 parts)",
+      "timestamp": "2025-10-30T17:49:34.578133+00:00",
+      "details": {
+        "token_parts": 3
+      }
+    }
+  ]
+}

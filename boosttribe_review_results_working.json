@@ -1,0 +1,140 @@
+{
+  "summary": {
+    "total_tests": 9,
+    "passed": 9,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "working_admin": {
+    "email": "sarah.martinez@afroboost.com",
+    "password": "SecurePass123!"
+  },
+  "test_results": [
+    {
+      "test": "Admin Login",
+      "success": true,
+      "message": "Successfully logged in admin: Sarah Martinez (sarah.martinez@afroboost.com)",
+      "timestamp": "2025-11-01T12:42:32.463683+00:00",
+      "details": {
+        "user_id": "27510c50-6eea-411c-be29-39839fe5dc00",
+        "email": "sarah.martinez@afroboost.com",
+        "role": "admin",
+        "token_received": true
+      }
+    },
+    {
+      "test": "Forgot Password",
+      "success": true,
+      "message": "Password reset request successful",
+      "timestamp": "2025-11-01T12:42:33.840278+00:00",
+      "details": {
+        "status_code": 200,
+        "message": "If your email is registered, you will receive a password reset link",
+        "email": "contact.artboost@gmail.com"
+      }
+    },
+    {
+      "test": "Reset Password (Test Token)",
+      "success": true,
+      "message": "Correctly rejected invalid test token",
+      "timestamp": "2025-11-01T12:42:34.849279+00:00",
+      "details": {
+        "status_code": 400,
+        "message": "Invalid or expired reset token",
+        "expected_behavior": "Should reject invalid tokens"
+      }
+    },
+    {
+      "test": "Create Catalog Item",
+      "success": true,
+      "message": "Successfully created course: Test Cours Yoga",
+      "timestamp": "2025-11-01T12:42:35.862331+00:00",
+      "details": {
+        "item_id": "ffff7c60-f78e-4e7d-b8f3-a6d4278e4cbb",
+        "status_code": 200,
+        "slug_generated": "test-cours-yoga-5b823b7a"
+      }
+    },
+    {
+      "test": "List Catalog Items",
+      "success": true,
+      "message": "Successfully retrieved 16 catalog items",
+      "timestamp": "2025-11-01T12:42:36.871442+00:00",
+      "details": {
+        "total_items": 16,
+        "created_item_found": true,
+        "status_code": 200
+      }
+    },
+    {
+      "test": "Delete Catalog Item",
+      "success": true,
+      "message": "Successfully deleted catalog item: ffff7c60-f78e-4e7d-b8f3-a6d4278e4cbb",
+      "timestamp": "2025-11-01T12:42:37.880235+00:00",
+      "details": {
+        "item_id": "ffff7c60-f78e-4e7d-b8f3-a6d4278e4cbb",
+        "status_code": 200,
+        "message": "Item deleted successfully"
+      }
+    },
+    {
+      "test": "Start Public Chat",
+      "success": true,
+      "message": "Successfully started chat session: 771abcfe-5e64-4c49-964b-8152e569db4b",
+      "timestamp": "2025-11-01T12:42:38.891426+00:00",
+      "details": {
+        "chat_id": "771abcfe-5e64-4c49-964b-8152e569db4b",
+        "ad_platform": "facebook",
+        "visitor_name": "Test User",
+        "messages_count": 2,
+        "status": "active"
+      }
+    },
+    {
+      "test": "Send Chat Message",
+      "success": true,
+      "message": "Successfully sent message to chat: 771abcfe-5e64-4c49-964b-8152e569db4b",
+      "timestamp": "2025-11-01T12:42:39.905375+00:00",
+      "details": {
+        "chat_id": "771abcfe-5e64-4c49-964b-8152e569db4b",
+        "message_content": "Quels sont vos tarifs?",
+        "messages_count": 4,
+        "status_code": 200
+      }
+    },
+    {
+      "test": "Verify API Keys",
+      "success": true,
+      "message": "API Keys verification complete: 2 keys configured",
+      "timestamp": "2025-11-01T12:42:40.905622+00:00",
+      "details": {
+        "EMERGENT_LLM_KEY": {
+          "present": true,
+          "value_preview": "sk-emergent-44217751..."
+        },
+        "RESEND_API_KEY": {
+          "present": true,
+          "value_preview": "re_TmbGag5W_LHSfewRA..."
+        },
+        "STRIPE_PUBLISHABLE_KEY": {
+          "present": false,
+          "value_preview": null
+        },
+        "STRIPE_SECRET_KEY": {
+          "present": false,
+          "value_preview": null
+        }
+      }
+    }
+  ],
+  "endpoints_tested": [
+    "POST /api/auth/login",
+    "POST /api/auth/forgot-password",
+    "POST /api/auth/reset-password",
+    "POST /api/catalog",
+    "GET /api/catalog",
+    "DELETE /api/catalog/{id}",
+    "POST /api/ad-chat/start",
+    "POST /api/ad-chat/{id}/message"
+  ]
+}
