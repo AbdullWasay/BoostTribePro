@@ -575,18 +575,18 @@ const Contacts = () => {
             </Select>
           </div>
           {selectedContacts.length > 0 && (
-            <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/30">
-                <span className="text-sm font-medium">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-primary/10 rounded-lg border border-primary/30">
+                <span className="text-sm font-medium whitespace-nowrap">
                 ✓ {selectedContacts.length} {selectedContacts.length === 1 ? t('contacts.contacts') : t('contacts.contacts')} {selectedContacts.length === 1 ? t('contacts.selected') : t('contacts.selectedPlural')}
               </span>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   onClick={() => setShowBulkMessageDialog(true)}
-                  className="bg-primary hover:bg-primary/90"
+                  className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
                   size="sm"
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  {t('contacts.sendMessageButton')}
+                  <span className="whitespace-nowrap">{t('contacts.sendMessageButton')}</span>
                 </Button>
                 <Button
                   onClick={async () => {
@@ -610,18 +610,19 @@ const Contacts = () => {
                   }}
                   variant="destructive"
                   size="sm"
-                  className="bg-red-500 hover:bg-red-600"
+                  className="bg-red-500 hover:bg-red-600 w-full sm:w-auto"
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
-                  {t('contacts.deleteSelection')}
+                  <span className="whitespace-nowrap">{t('contacts.deleteSelection')}</span>
                 </Button>
                 <Button
                   onClick={() => setSelectedContacts([])}
                   variant="outline"
                   size="sm"
+                  className="w-full sm:w-auto"
                 >
                   <X className="mr-2 h-4 w-4" />
-                  {t('contacts.deselect')}
+                  <span className="whitespace-nowrap">{t('contacts.deselect')}</span>
                 </Button>
               </div>
             </div>

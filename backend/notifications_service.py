@@ -129,9 +129,9 @@ class NotificationsService:
                         
                         <p>L'équipe BoostTribe</p>
                     </div>
-                    <div class="footer">
-                        <p>© 2025 BoostTribe</p>
-                    </div>
+                    # <div class="footer">
+                    #     <p>© 2025 BoostTribe</p>
+                    # </div>
                 </div>
             </body>
             </html>

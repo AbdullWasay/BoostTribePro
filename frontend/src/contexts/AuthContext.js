@@ -45,13 +45,15 @@ export const AuthProvider = ({ children }) => {
         setLoading(false); // Set loading to false immediately
         
         // Verify token in the background (non-blocking)
+        // Use BACKEND_URL directly (it's a module-level constant, doesn't need to be in deps)
+        const backendUrl = BACKEND_URL;
         const verifyToken = async (tokenToVerify) => {
           try {
             // Add timeout to prevent hanging
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
             
-            const response = await fetch(`${BACKEND_URL}/api/auth/me`, {
+            const response = await fetch(`${backendUrl}/api/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${tokenToVerify}`
               },
@@ -107,9 +109,7 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
-    // Empty dependency array - this should only run once on mount
-    // eslint-disable-next-line
-  }, []);
+  }, []); // Empty deps - BACKEND_URL is module-level constant, hasCheckedAuth is ref
 
   const login = async (email, password) => {
     try {

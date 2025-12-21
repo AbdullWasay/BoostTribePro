@@ -60,7 +60,7 @@ const Register = () => {
       // Use requestAnimationFrame to ensure React processes state updates before navigation
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          navigate('/dashboard');
+      navigate('/dashboard');
         });
       });
     } else {
