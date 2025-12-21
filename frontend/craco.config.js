@@ -35,6 +35,13 @@ const webpackConfig = {
       '@': path.resolve(__dirname, 'src'),
     },
     configure: (webpackConfig) => {
+      // Disable ESLint plugin in production builds to avoid dependency issues
+      if (process.env.NODE_ENV === 'production' || process.env.DISABLE_ESLINT_PLUGIN === 'true') {
+        // Remove ESLint webpack plugin
+        webpackConfig.plugins = webpackConfig.plugins.filter(plugin => {
+          return plugin.constructor.name !== 'ESLintWebpackPlugin';
+        });
+      }
 
       // Disable hot reload completely if environment variable is set
       if (config.disableHotReload) {
