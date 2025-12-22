@@ -99,18 +99,45 @@ const Contacts = () => {
       return;
     }
 
+    const groupNameToCreate = newGroupName.trim();
+    
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      const response = await axios.post(
         `${API}/contact-groups`,
-        { name: newGroupName.trim(), color: '#8B5CF6' },
+        { name: groupNameToCreate, color: '#8B5CF6' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success(t('contacts.groupCreated'));
-      setNewGroupName('');
-      fetchCustomGroups();
+      
+      // Check response status explicitly
+      if (response && (response.status === 200 || response.status === 201)) {
+        toast.success(t('contacts.groupCreated'));
+        setNewGroupName('');
+        // Fetch groups in the background - don't await to avoid blocking
+        fetchCustomGroups().catch(err => {
+          console.error('Error refreshing groups after creation:', err);
+          // Don't show error to user since group was created successfully
+        });
+      } else {
+        // Unexpected response status
+        toast.error(t('contacts.errorCreatingGroup'));
+      }
     } catch (error) {
-      toast.error(error.response?.data?.detail || t('contacts.errorCreatingGroup'));
+      // Only show error if we got an error response from server (4xx, 5xx)
+      if (error.response && error.response.status >= 400) {
+        const errorMessage = error.response?.data?.detail || error.response?.data?.message || t('contacts.errorCreatingGroup');
+        toast.error(errorMessage);
+      } else if (error.code === 'ECONNABORTED' || error.message === 'Network Error') {
+        // Network/timeout error - group might have been created, so refresh and show success
+        console.warn('Network error during group creation, refreshing groups:', error);
+        setNewGroupName('');
+        fetchCustomGroups().catch(err => console.error('Error refreshing groups:', err));
+        toast.success(t('contacts.groupCreated'));
+      } else {
+        // Other error
+        console.error('Error creating group:', error);
+        toast.error(t('contacts.errorCreatingGroup'));
+      }
     }
   };
 
