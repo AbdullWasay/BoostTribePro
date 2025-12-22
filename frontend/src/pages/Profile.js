@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
 import { User, Mail, Key, CreditCard, Calendar, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,6 +22,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Profile = () => {
   const { t } = useTranslation();
+  const { user, token } = useAuth(); // Get logged-in user data
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [settings, setSettings] = useState(null);
@@ -34,13 +36,17 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    fetchStats();
-    fetchSettings();
-  }, []);
+    if (user && token) {
+      fetchStats();
+      fetchSettings();
+    }
+  }, [user, token]);
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API}/analytics/overview`);
+      const response = await axios.get(`${API}/analytics/overview`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -51,7 +57,9 @@ const Profile = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await axios.get(`${API}/settings`);
+      const response = await axios.get(`${API}/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSettings(response.data);
       setApiFormData({
         openai_api_key: response.data.openai_api_key || '',
@@ -67,7 +75,9 @@ const Profile = () => {
 
   const handleSaveApiKeys = async () => {
     try {
-      await axios.put(`${API}/settings`, apiFormData);
+      await axios.put(`${API}/settings`, apiFormData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('profile.apiKeysSaved'));
       setShowApiDialog(false);
       fetchSettings();
@@ -75,6 +85,15 @@ const Profile = () => {
       console.error('Error saving API keys:', error);
       toast.error(t('profile.errorSaving'));
     }
+  };
+
+  // Format member since date
+  const formatMemberSince = (createdAt) => {
+    if (!createdAt) return 'N/A';
+    const date = new Date(createdAt);
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 
+                       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
   };
 
   if (loading) {
@@ -108,11 +127,11 @@ const Profile = () => {
           <CardContent className="space-y-4">
             <div>
               <Label className="text-gray-400">{t('profile.name')}</Label>
-              <p className="text-lg font-medium text-white">Coach Bassi</p>
+              <p className="text-lg font-medium text-white">{user?.name || 'N/A'}</p>
             </div>
             <div>
               <Label className="text-gray-400">{t('profile.email')}</Label>
-              <p className="text-lg font-medium text-white">contact@boosttribe.com</p>
+              <p className="text-lg font-medium text-white">{user?.email || 'N/A'}</p>
             </div>
             <div>
               <Label className="text-gray-400">{t('profile.currentPlan')}</Label>
@@ -123,7 +142,7 @@ const Profile = () => {
             </div>
             <div>
               <Label className="text-gray-400">{t('profile.memberSince')}</Label>
-              <p className="text-lg font-medium text-white">Octobre 2025</p>
+              <p className="text-lg font-medium text-white">{formatMemberSince(user?.created_at)}</p>
             </div>
           </CardContent>
         </Card>
@@ -157,8 +176,8 @@ const Profile = () => {
         </Card>
       </div>
 
-      {/* Subscription Management */}
-      <Card className="glass border-primary/20" data-testid="subscription-card">
+      {/* Subscription Management - COMMENTED OUT */}
+      {/* <Card className="glass border-primary/20" data-testid="subscription-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5 text-primary" />
@@ -186,7 +205,7 @@ const Profile = () => {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* API Keys Status */}
       <Card className="glass border-primary/20" data-testid="api-keys-card">

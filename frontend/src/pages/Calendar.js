@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +13,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Calendar = () => {
   const { t, i18n } = useTranslation();
+  const { token } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
@@ -22,7 +24,9 @@ const Calendar = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await axios.get(`${API}/campaigns`);
+      const response = await axios.get(`${API}/campaigns`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setCampaigns(response.data);
     } catch (error) {
       console.error('Error fetching campaigns:', error);

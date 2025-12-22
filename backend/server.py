@@ -279,6 +279,7 @@ class PaymentTransaction(BaseModel):
 class AdminSettings(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Added: user_id to make settings per-user
     openai_api_key: Optional[str] = None
     resend_api_key: Optional[str] = None
     whatsapp_access_token: Optional[str] = None
@@ -290,8 +291,8 @@ class AdminSettings(BaseModel):
     bank_name: Optional[str] = None
     bank_currency: str = "CHF"
     company_name: str = "Afroboost"
-    sender_email: str = "contact@afroboost.com"
-    sender_name: str = "Coach Bassi"
+    sender_email: Optional[str] = None  # Made optional, user can configure
+    sender_name: Optional[str] = None  # Made optional, user can configure
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class AdminSettingsUpdate(BaseModel):
@@ -407,6 +408,7 @@ class ContactUpdate(BaseModel):
 class Campaign(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # User who created the campaign
     title: str
     subject: str
     content_html: str
@@ -444,6 +446,7 @@ class EmailLog(BaseModel):
     campaign_id: str
     contact_id: str
     contact_email: str
+    user_id: str  # Added: user_id to track which user owns this email log
     status: str  # sent, opened, clicked, failed, bounced
     sent_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     opened_at: Optional[datetime] = None
@@ -1321,14 +1324,20 @@ def generate_slug(title: str) -> str:
 
 # ========================
 
-async def get_settings():
-    """Get admin settings from database"""
-    settings = await db.settings.find_one({}, {"_id": 0})
+async def get_settings(user_id: str = None):
+    """Get admin settings from database - per user"""
+    if not user_id:
+        raise ValueError("user_id is required to fetch settings")
+    
+    settings = await db.settings.find_one({"user_id": user_id}, {"_id": 0})
     if not settings:
-        # Create default settings
+        # Create default settings for this user
         default_settings = AdminSettings(
-            openai_api_key=os.getenv('OPENAI_API_KEY', ''),
-            resend_api_key=os.getenv('RESEND_API_KEY', '')
+            user_id=user_id,
+            openai_api_key='',
+            resend_api_key='',
+            sender_email=None,
+            sender_name=None
         )
         doc = default_settings.model_dump()
         doc['updated_at'] = doc['updated_at'].isoformat()
@@ -1359,11 +1368,14 @@ async def get_contacts_by_filters(groups: List[str] = None, tags: List[str] = No
     if user_id:
         query['user_id'] = user_id
     
+    # Don't filter by active if we want all contacts
     if active_only:
         query['active'] = True
-    if groups:
+    # Only filter by groups if provided
+    if groups and len(groups) > 0:
         query['group'] = {'$in': groups}
-    if tags:
+    # Only filter by tags if provided
+    if tags and len(tags) > 0:
         query['tags'] = {'$in': tags}
     
     logger.info(f"Fetching contacts with query: {query}")
@@ -1544,14 +1556,14 @@ async def get_me(current_user: Dict = Depends(get_current_user)):
 # ========================
 
 @api_router.get("/settings", response_model=AdminSettings)
-async def get_admin_settings():
-    """Get admin settings"""
-    return await get_settings()
+async def get_admin_settings(current_user: Dict = Depends(get_current_user)):
+    """Get admin settings for the current user"""
+    return await get_settings(user_id=current_user["id"])
 
 @api_router.put("/settings", response_model=AdminSettings)
-async def update_admin_settings(settings_update: AdminSettingsUpdate):
-    """Update admin settings"""
-    current_settings = await get_settings()
+async def update_admin_settings(settings_update: AdminSettingsUpdate, current_user: Dict = Depends(get_current_user)):
+    """Update admin settings for the current user"""
+    current_settings = await get_settings(user_id=current_user["id"])
     update_data = settings_update.model_dump(exclude_unset=True)
     
     for key, value in update_data.items():
@@ -1562,7 +1574,8 @@ async def update_admin_settings(settings_update: AdminSettingsUpdate):
     doc = current_settings.model_dump()
     doc['updated_at'] = doc['updated_at'].isoformat()
     
-    await db.settings.update_one({}, {"$set": doc}, upsert=True)
+    # Update settings for this specific user
+    await db.settings.update_one({"user_id": current_user["id"]}, {"$set": doc}, upsert=True)
     return current_settings
 
 
@@ -2324,9 +2337,9 @@ async def send_bulk_message(
 # ========================
 
 @api_router.get("/campaigns", response_model=List[Campaign])
-async def get_campaigns():
-    """Get all campaigns"""
-    campaigns = await db.campaigns.find({}, {"_id": 0}).to_list(1000)
+async def get_campaigns(current_user: Dict = Depends(get_current_user)):
+    """Get all campaigns for the current user"""
+    campaigns = await db.campaigns.find({"user_id": current_user["id"]}, {"_id": 0}).to_list(1000)
     for campaign in campaigns:
         for date_field in ['created_at', 'scheduled_at', 'sent_at']:
             if campaign.get(date_field) and isinstance(campaign[date_field], str):
@@ -2334,9 +2347,9 @@ async def get_campaigns():
     return campaigns
 
 @api_router.get("/campaigns/{campaign_id}", response_model=Campaign)
-async def get_campaign(campaign_id: str):
+async def get_campaign(campaign_id: str, current_user: Dict = Depends(get_current_user)):
     """Get a specific campaign"""
-    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    campaign = await db.campaigns.find_one({"id": campaign_id, "user_id": current_user["id"]}, {"_id": 0})
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
@@ -2346,61 +2359,78 @@ async def get_campaign(campaign_id: str):
     return campaign
 
 @api_router.post("/campaigns", response_model=Campaign)
-async def create_campaign(campaign_data: CampaignCreate):
+async def create_campaign(campaign_data: CampaignCreate, current_user: Dict = Depends(get_current_user)):
     """Create a new campaign"""
-    campaign = Campaign(**campaign_data.model_dump())
-    if campaign_data.scheduled_at:
-        campaign.status = "scheduled"
-    
-    doc = campaign.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    if doc.get('scheduled_at'):
-        doc['scheduled_at'] = doc['scheduled_at'].isoformat()
-    if doc.get('sent_at'):
-        doc['sent_at'] = doc['sent_at'].isoformat()
-    
-    await db.campaigns.insert_one(doc)
-    return campaign
+    try:
+        logger.info(f"Creating campaign for user {current_user['id']}: {campaign_data.title}")
+        campaign = Campaign(**campaign_data.model_dump(), user_id=current_user["id"])
+        if campaign_data.scheduled_at:
+            campaign.status = "scheduled"
+        
+        doc = campaign.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        if doc.get('scheduled_at'):
+            doc['scheduled_at'] = doc['scheduled_at'].isoformat()
+        if doc.get('sent_at'):
+            doc['sent_at'] = doc['sent_at'].isoformat()
+        
+        logger.info(f"Inserting campaign document: {doc.get('id')}")
+        result = await db.campaigns.insert_one(doc)
+        logger.info(f"Campaign inserted successfully with MongoDB _id: {result.inserted_id}")
+        return campaign
+    except Exception as e:
+        logger.error(f"Error creating campaign: {str(e)}")
+        logger.exception(e)  # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to create campaign: {str(e)}")
 
 @api_router.put("/campaigns/{campaign_id}", response_model=Campaign)
-async def update_campaign(campaign_id: str, campaign_update: CampaignUpdate):
+async def update_campaign(campaign_id: str, campaign_update: CampaignUpdate, current_user: Dict = Depends(get_current_user)):
     """Update a campaign"""
-    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
-    if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
-    
-    for date_field in ['created_at', 'scheduled_at', 'sent_at']:
-        if campaign.get(date_field) and isinstance(campaign[date_field], str):
-            campaign[date_field] = datetime.fromisoformat(campaign[date_field])
-    
-    campaign_obj = Campaign(**campaign)
-    update_data = campaign_update.model_dump(exclude_unset=True)
-    
-    for key, value in update_data.items():
-        setattr(campaign_obj, key, value)
-    
-    doc = campaign_obj.model_dump()
-    doc['created_at'] = doc['created_at'].isoformat()
-    if doc.get('scheduled_at'):
-        doc['scheduled_at'] = doc['scheduled_at'].isoformat()
-    if doc.get('sent_at'):
-        doc['sent_at'] = doc['sent_at'].isoformat()
-    
-    await db.campaigns.update_one({"id": campaign_id}, {"$set": doc})
-    return campaign_obj
+    try:
+        logger.info(f"Updating campaign {campaign_id} for user {current_user['id']}")
+        campaign = await db.campaigns.find_one({"id": campaign_id, "user_id": current_user["id"]}, {"_id": 0})
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        
+        for date_field in ['created_at', 'scheduled_at', 'sent_at']:
+            if campaign.get(date_field) and isinstance(campaign[date_field], str):
+                campaign[date_field] = datetime.fromisoformat(campaign[date_field])
+        
+        campaign_obj = Campaign(**campaign)
+        update_data = campaign_update.model_dump(exclude_unset=True)
+        
+        for key, value in update_data.items():
+            setattr(campaign_obj, key, value)
+        
+        doc = campaign_obj.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        if doc.get('scheduled_at'):
+            doc['scheduled_at'] = doc['scheduled_at'].isoformat()
+        if doc.get('sent_at'):
+            doc['sent_at'] = doc['sent_at'].isoformat()
+        
+        result = await db.campaigns.update_one({"id": campaign_id}, {"$set": doc})
+        logger.info(f"Campaign updated: {result.modified_count} document(s) modified")
+        return campaign_obj
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating campaign {campaign_id}: {str(e)}")
+        logger.exception(e)  # Log full traceback
+        raise HTTPException(status_code=500, detail=f"Failed to update campaign: {str(e)}")
 
 @api_router.delete("/campaigns/{campaign_id}")
-async def delete_campaign(campaign_id: str):
+async def delete_campaign(campaign_id: str, current_user: Dict = Depends(get_current_user)):
     """Delete a campaign"""
-    result = await db.campaigns.delete_one({"id": campaign_id})
+    result = await db.campaigns.delete_one({"id": campaign_id, "user_id": current_user["id"]})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Campaign not found")
     return {"message": "Campaign deleted successfully"}
 
 @api_router.post("/campaigns/{campaign_id}/send")
-async def send_campaign(campaign_id: str, background_tasks: BackgroundTasks):
+async def send_campaign(campaign_id: str, background_tasks: BackgroundTasks, current_user: Dict = Depends(get_current_user)):
     """Send a campaign immediately"""
-    campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
+    campaign = await db.campaigns.find_one({"id": campaign_id, "user_id": current_user["id"]}, {"_id": 0})
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     
@@ -2426,118 +2456,292 @@ async def send_campaign(campaign_id: str, background_tasks: BackgroundTasks):
 
 async def send_campaign_emails(campaign_id: str):
     """Background task to send campaign emails"""
+    logger.info(f"=== STARTING EMAIL SEND PROCESS FOR CAMPAIGN {campaign_id} ===")
     try:
+        logger.info(f"[STEP 1] Fetching campaign {campaign_id} from database...")
         campaign = await db.campaigns.find_one({"id": campaign_id}, {"_id": 0})
         if not campaign:
+            logger.error(f"[STEP 1 FAILED] Campaign {campaign_id} not found in database")
             return
+        logger.info(f"[STEP 1 SUCCESS] Campaign found: {campaign.get('title', 'Unknown')}")
         
+        logger.info(f"[STEP 2] Parsing campaign date fields...")
         for date_field in ['created_at', 'scheduled_at', 'sent_at']:
             if campaign.get(date_field) and isinstance(campaign[date_field], str):
                 campaign[date_field] = datetime.fromisoformat(campaign[date_field])
+        logger.info(f"[STEP 2 SUCCESS] Date fields parsed")
         
+        logger.info(f"[STEP 3] Creating Campaign object from database data...")
         campaign_obj = Campaign(**campaign)
-        settings = await get_settings()
+        logger.info(f"[STEP 3 SUCCESS] Campaign object created. Title: {campaign_obj.title}, User ID: {campaign_obj.user_id}")
         
-        # Get target contacts - FILTERED BY USER_ID
-        contacts = await get_contacts_by_filters(
-            groups=campaign_obj.target_groups if campaign_obj.target_groups else None,
-            tags=campaign_obj.target_tags if campaign_obj.target_tags else None,
-            user_id=campaign_obj.user_id  # CRITICAL: Only send to user's own contacts
-        )
+        logger.info(f"[STEP 4] Fetching admin settings for user {campaign_obj.user_id}...")
+        settings = await get_settings(user_id=campaign_obj.user_id)
+        logger.info(f"[STEP 4 SUCCESS] Settings retrieved. Resend API key present: {bool(settings.resend_api_key)}, Sender email: {settings.sender_email}, Sender name: {settings.sender_name}")
         
-        if not contacts:
-            logger.warning(f"No contacts found for campaign {campaign_id}")
+        # Validate settings
+        logger.info(f"[STEP 5] Validating settings...")
+        if not settings.resend_api_key:
+            error_msg = f"Resend API key not configured for campaign {campaign_id}"
+            logger.error(f"[STEP 5 FAILED] {error_msg}")
             await db.campaigns.update_one(
                 {"id": campaign_id},
                 {"$set": {"status": "failed"}}
             )
+            logger.error(f"[FAILURE] Campaign {campaign_id} status set to 'failed' - Resend API key missing")
             return
         
-        get_resend_client(settings.resend_api_key)
+        if not settings.sender_email:
+            error_msg = f"Sender email not configured for campaign {campaign_id}"
+            logger.error(f"[STEP 5 FAILED] {error_msg}")
+            await db.campaigns.update_one(
+                {"id": campaign_id},
+                {"$set": {"status": "failed"}}
+            )
+            logger.error(f"[FAILURE] Campaign {campaign_id} status set to 'failed' - Sender email missing")
+            return
+        logger.info(f"[STEP 5 SUCCESS] Settings validated")
+        
+        # Get target contacts - FILTERED BY USER_ID
+        logger.info(f"[STEP 6] Preparing contact filters...")
+        target_groups = campaign_obj.target_groups if campaign_obj.target_groups and len(campaign_obj.target_groups) > 0 else None
+        target_tags = campaign_obj.target_tags if campaign_obj.target_tags and len(campaign_obj.target_tags) > 0 else None
+        logger.info(f"[STEP 6] Target groups: {target_groups}, Target tags: {target_tags}, User ID: {campaign_obj.user_id}")
+        
+        logger.info(f"[STEP 7] Fetching contacts from database...")
+        contacts = await get_contacts_by_filters(
+            groups=target_groups,
+            tags=target_tags,
+            active_only=False,  # Include all contacts, not just active ones
+            user_id=campaign_obj.user_id  # CRITICAL: Only send to user's own contacts
+        )
+        logger.info(f"[STEP 7 SUCCESS] Found {len(contacts)} contacts for campaign {campaign_id}")
+        
+        if not contacts:
+            error_msg = f"No contacts found for campaign {campaign_id}, user {campaign_obj.user_id}"
+            logger.warning(f"[STEP 7 FAILED] {error_msg}")
+            await db.campaigns.update_one(
+                {"id": campaign_id},
+                {"$set": {"status": "failed"}}
+            )
+            logger.error(f"[FAILURE] Campaign {campaign_id} status set to 'failed' - No contacts found")
+            return
+        
+        # Configure Resend client
+        logger.info(f"[STEP 8] Configuring Resend API client...")
+        if not settings.resend_api_key:
+            raise Exception("Resend API key not configured")
+        resend.api_key = settings.resend_api_key
+        logger.info(f"[STEP 8 SUCCESS] Resend API client configured")
+        
+        # Validate sender email and name
+        logger.info(f"[STEP 9] Validating sender information...")
+        # Get user info for fallback
+        user_data = await db.users.find_one({"id": campaign_obj.user_id}, {"_id": 0})
+        sender_name = settings.sender_name or (user_data.get('name', 'BoostTribe') if user_data else "BoostTribe")
+        sender_email = settings.sender_email
+        
+        # If no sender email configured, try to use user's email or Resend's default domain
+        if not sender_email:
+            if user_data and user_data.get('email'):
+                sender_email = user_data['email']
+                logger.warning(f"[STEP 9] No sender email configured, using user email: {sender_email}")
+            else:
+                logger.warning(f"[STEP 9] No sender email configured, using Resend default domain for testing")
+                sender_email = "onboarding@resend.dev"
+        # Check if the email domain might need verification - if custom domain fails, fallback to default
+        elif "@resend.dev" not in sender_email:
+            logger.info(f"[STEP 9] Using custom domain email: {sender_email}")
+            logger.info(f"[STEP 9] Note: Custom domain must be verified in Resend. If sending fails, consider using onboarding@resend.dev for testing")
+        
+        logger.info(f"[STEP 9 SUCCESS] Sender: {sender_name} <{sender_email}>")
+        
+        logger.info(f"[STEP 10] Starting to send {len(contacts)} emails for campaign {campaign_id}...")
         
         sent_count = 0
         failed_count = 0
         
-        for contact in contacts:
+        for idx, contact in enumerate(contacts, 1):
+            contact_email = getattr(contact, 'email', 'NO_EMAIL')
+            contact_id = getattr(contact, 'id', 'NO_ID')
+            logger.info(f"[EMAIL {idx}/{len(contacts)}] Processing contact {contact_id} ({contact_email})...")
+            
             try:
+                # Validate contact email
+                logger.info(f"[EMAIL {idx}] Validating contact email...")
+                if not contact.email or not contact.email.strip():
+                    logger.warning(f"[EMAIL {idx} SKIPPED] Contact {contact_id} has no email address")
+                    failed_count += 1
+                    continue
+                logger.info(f"[EMAIL {idx}] Email validated: {contact.email}")
+                
                 # Create tracking pixel
-                tracking_pixel = f'<img src="{os.getenv("REACT_APP_BACKEND_URL", "http://localhost:8001")}/api/track/open/{campaign_id}/{contact.id}" width="1" height="1" />'
+                logger.info(f"[EMAIL {idx}] Creating tracking pixel and modifying content...")
+                backend_url = os.getenv("REACT_APP_BACKEND_URL", "http://localhost:8001")
+                logger.info(f"[EMAIL {idx}] Backend URL: {backend_url}")
+                tracking_pixel = f'<img src="{backend_url}/api/track/open/{campaign_id}/{contact.id}" width="1" height="1" />'
                 
                 # Add tracking to links
                 content_with_tracking = campaign_obj.content_html.replace(
                     'href="',
-                    f'href="{os.getenv("REACT_APP_BACKEND_URL", "http://localhost:8001")}/api/track/click/{campaign_id}/{contact.id}?url='
+                    f'href="{backend_url}/api/track/click/{campaign_id}/{contact.id}?url='
                 )
                 
                 # Add tracking pixel
                 content_with_tracking += tracking_pixel
+                logger.info(f"[EMAIL {idx}] Content prepared with tracking")
                 
                 # Send email
                 params = {
-                    "from": f"{settings.sender_name} <{settings.sender_email}>",
-                    "to": [contact.email],
+                    "from": f"{sender_name} <{sender_email}>",
+                    "to": [contact.email.strip()],
                     "subject": campaign_obj.subject,
                     "html": content_with_tracking,
                 }
+                logger.info(f"[EMAIL {idx}] Email params prepared. From: {sender_name} <{sender_email}>, To: {contact.email.strip()}, Subject: {campaign_obj.subject[:50]}...")
                 
-                resend.Emails.send(params)
+                # Send email via Resend API
+                logger.info(f"[EMAIL {idx}] Calling Resend.Emails.send()...")
+                try:
+                    response = resend.Emails.send(params)
+                    logger.info(f"[EMAIL {idx}] Resend API call completed. Response type: {type(response)}, Response: {response}")
+                    
+                    # Check response - Resend returns a dict with 'id' on success or 'error' on failure
+                    if isinstance(response, dict):
+                        if 'error' in response:
+                            error_msg = f"Resend API error: {response.get('error', 'Unknown error')}"
+                            logger.error(f"[EMAIL {idx} FAILED] {error_msg}")
+                            logger.error(f"[EMAIL {idx}] Full response: {response}")
+                            raise Exception(error_msg)
+                        elif 'id' in response:
+                            logger.info(f"[EMAIL {idx} SUCCESS] Email sent successfully. Resend ID: {response.get('id')}")
+                        else:
+                            logger.warning(f"[EMAIL {idx} WARNING] Unexpected Resend response format: {response}")
+                    elif hasattr(response, '__dict__'):
+                        logger.info(f"[EMAIL {idx}] Response object attributes: {dir(response)}")
+                        logger.info(f"[EMAIL {idx}] Response __dict__: {response.__dict__ if hasattr(response, '__dict__') else 'N/A'}")
+                    else:
+                        logger.info(f"[EMAIL {idx}] Response type: {type(response)}, Value: {response}")
+                    
+                except Exception as resend_error:
+                    logger.error(f"[EMAIL {idx} RESEND ERROR] Exception during Resend API call: {str(resend_error)}")
+                    logger.exception(resend_error)
+                    raise  # Re-raise to be caught by outer exception handler
                 
                 # Log email
+                logger.info(f"[EMAIL {idx}] Creating email log entry...")
                 email_log = EmailLog(
                     campaign_id=campaign_id,
                     contact_id=contact.id,
                     contact_email=contact.email,
+                    user_id=campaign_obj.user_id,  # Add user_id
                     status="sent"
                 )
                 log_doc = email_log.model_dump()
                 log_doc['sent_at'] = log_doc['sent_at'].isoformat()
+                logger.info(f"[EMAIL {idx}] Email log document prepared: {log_doc}")
                 await db.email_logs.insert_one(log_doc)
+                logger.info(f"[EMAIL {idx}] Email log inserted into database")
                 
                 # Update contact stats
+                logger.info(f"[EMAIL {idx}] Updating contact stats...")
                 await db.contacts.update_one(
                     {"id": contact.id},
                     {"$inc": {"stats.emails_received": 1}}
                 )
+                logger.info(f"[EMAIL {idx}] Contact stats updated")
                 
                 sent_count += 1
+                logger.info(f"[EMAIL {idx} COMPLETED] Successfully sent. Total sent: {sent_count}, Total failed: {failed_count}")
                 
             except Exception as e:
-                logger.error(f"Error sending email to {contact.email}: {e}")
+                error_message = str(e)
+                logger.error(f"[EMAIL {idx} EXCEPTION] Error sending email to {contact_email}: {error_message}")
+                logger.exception(e)  # Log full traceback
+                
+                # Check for Resend testing limitations
+                if "can only send testing emails to your own email address" in error_message.lower():
+                    logger.error(f"[EMAIL {idx}] ⚠️ RESEND TESTING LIMITATION DETECTED!")
+                    logger.error(f"[EMAIL {idx}] Resend's free/testing tier only allows sending to your own email address.")
+                    logger.error(f"[EMAIL {idx}] To send to other recipients, you must:")
+                    logger.error(f"[EMAIL {idx}]   1. Verify a domain in Resend: https://resend.com/domains")
+                    logger.error(f"[EMAIL {idx}]   2. Use an email from that verified domain as sender")
+                    logger.error(f"[EMAIL {idx}]   OR upgrade to a paid Resend plan")
+                    logger.error(f"[EMAIL {idx}] Current sender: {sender_email}")
+                    logger.error(f"[EMAIL {idx}] Attempting to send to: {contact_email}")
+                    logger.error(f"[EMAIL {idx}] Account owner email: abdul.wasay308@gmail.com")
+                
                 failed_count += 1
                 
                 # Log failed email
-                email_log = EmailLog(
-                    campaign_id=campaign_id,
-                    contact_id=contact.id,
-                    contact_email=contact.email,
-                    status="failed",
-                    error_message=str(e)
-                )
-                log_doc = email_log.model_dump()
-                log_doc['sent_at'] = log_doc['sent_at'].isoformat()
-                await db.email_logs.insert_one(log_doc)
+                logger.info(f"[EMAIL {idx}] Creating failed email log entry...")
+                try:
+                    email_log = EmailLog(
+                        campaign_id=campaign_id,
+                        contact_id=contact.id if hasattr(contact, 'id') else 'unknown',
+                        contact_email=contact_email,
+                        user_id=campaign_obj.user_id,
+                        status="failed",
+                        error_message=str(e)
+                    )
+                    log_doc = email_log.model_dump()
+                    log_doc['sent_at'] = log_doc['sent_at'].isoformat()
+                    await db.email_logs.insert_one(log_doc)
+                    logger.info(f"[EMAIL {idx}] Failed email log inserted into database")
+                except Exception as log_error:
+                    logger.error(f"[EMAIL {idx}] Failed to create email log: {str(log_error)}")
+                    logger.exception(log_error)
         
-        # Update campaign
-        await db.campaigns.update_one(
-            {"id": campaign_id},
-            {
-                "$set": {
-                    "status": "sent",
-                    "sent_at": datetime.now(timezone.utc).isoformat(),
-                    "stats.sent": sent_count,
-                    "stats.failed": failed_count
+        # Update campaign status based on results
+        logger.info(f"[STEP 11] Updating campaign status. Sent: {sent_count}, Failed: {failed_count}")
+        if sent_count > 0:
+            # At least some emails were sent successfully
+            logger.info(f"[STEP 11] Updating campaign to 'sent' status...")
+            update_result = await db.campaigns.update_one(
+                {"id": campaign_id},
+                {
+                    "$set": {
+                        "status": "sent",
+                        "sent_at": datetime.now(timezone.utc).isoformat(),
+                        "stats.sent": sent_count,
+                        "stats.failed": failed_count
+                    }
                 }
-            }
-        )
-        
-        logger.info(f"Campaign {campaign_id} sent: {sent_count} sent, {failed_count} failed")
+            )
+            logger.info(f"[STEP 11 SUCCESS] Campaign status updated. Modified count: {update_result.modified_count}")
+            logger.info(f"=== CAMPAIGN {campaign_id} COMPLETED SUCCESSFULLY: {sent_count} sent, {failed_count} failed ===")
+        else:
+            # No emails were sent successfully
+            logger.error(f"[STEP 11] No emails sent successfully. Updating campaign to 'failed' status...")
+            update_result = await db.campaigns.update_one(
+                {"id": campaign_id},
+                {
+                    "$set": {
+                        "status": "failed",
+                        "stats.sent": 0,
+                        "stats.failed": failed_count
+                    }
+                }
+            )
+            logger.error(f"[STEP 11 FAILED] Campaign status set to 'failed'. Modified count: {update_result.modified_count}")
+            logger.error(f"=== CAMPAIGN {campaign_id} FAILED: No emails sent, {failed_count} failed ===")
         
     except Exception as e:
-        logger.error(f"Error sending campaign {campaign_id}: {e}")
-        await db.campaigns.update_one(
-            {"id": campaign_id},
-            {"$set": {"status": "failed"}}
-        )
+        logger.error(f"=== CRITICAL ERROR IN CAMPAIGN {campaign_id} ===")
+        logger.error(f"Exception type: {type(e).__name__}")
+        logger.error(f"Exception message: {str(e)}")
+        logger.exception(e)  # Log full traceback
+        logger.error(f"Setting campaign {campaign_id} status to 'failed'...")
+        try:
+            await db.campaigns.update_one(
+                {"id": campaign_id},
+                {"$set": {"status": "failed"}}
+            )
+            logger.error(f"Campaign status updated to 'failed'")
+        except Exception as update_error:
+            logger.error(f"CRITICAL: Failed to update campaign status: {str(update_error)}")
+            logger.exception(update_error)
+        logger.error(f"=== END OF CRITICAL ERROR FOR CAMPAIGN {campaign_id} ===")
 
 
 # ========================
@@ -2622,15 +2826,37 @@ async def track_email_click(campaign_id: str, contact_id: str, url: str):
 # ========================
 
 @api_router.get("/analytics/overview")
-async def get_analytics_overview():
-    """Get overall analytics"""
-    total_contacts = await db.contacts.count_documents({})
-    active_contacts = await db.contacts.count_documents({"active": True})
-    total_campaigns = await db.campaigns.count_documents({})
-    sent_campaigns = await db.campaigns.count_documents({"status": "sent"})
-    total_emails_sent = await db.email_logs.count_documents({"status": {"$in": ["sent", "opened", "clicked"]}})
-    total_emails_opened = await db.email_logs.count_documents({"status": {"$in": ["opened", "clicked"]}})
-    total_emails_clicked = await db.email_logs.count_documents({"status": "clicked"})
+async def get_analytics_overview(current_user: Dict = Depends(get_current_user)):
+    """Get overall analytics for the current user"""
+    user_id = current_user["id"]
+    
+    # Get user's campaigns
+    user_campaigns = await db.campaigns.find({"user_id": user_id}, {"_id": 0, "id": 1}).to_list(1000)
+    campaign_ids = [c["id"] for c in user_campaigns]
+    
+    # Get user's WhatsApp campaigns
+    user_whatsapp_campaigns = await db.whatsapp_campaigns.find({"user_id": user_id}, {"_id": 0, "id": 1}).to_list(1000)
+    whatsapp_campaign_ids = [c["id"] for c in user_whatsapp_campaigns]
+    
+    # Get user's contacts
+    total_contacts = await db.contacts.count_documents({"user_id": user_id})
+    active_contacts = await db.contacts.count_documents({"user_id": user_id, "active": True})
+    
+    # Get campaign counts
+    total_campaigns = len(campaign_ids)
+    sent_campaigns = await db.campaigns.count_documents({"user_id": user_id, "status": "sent"})
+    
+    # Get email stats (filtered by user_id and campaign_ids for better accuracy)
+    # Use both user_id and campaign_ids for filtering
+    if campaign_ids:
+        total_emails_sent = await db.email_logs.count_documents({"user_id": user_id, "campaign_id": {"$in": campaign_ids}, "status": {"$in": ["sent", "opened", "clicked"]}})
+        total_emails_opened = await db.email_logs.count_documents({"user_id": user_id, "campaign_id": {"$in": campaign_ids}, "status": {"$in": ["opened", "clicked"]}})
+        total_emails_clicked = await db.email_logs.count_documents({"user_id": user_id, "campaign_id": {"$in": campaign_ids}, "status": "clicked"})
+    else:
+        # Fallback to user_id only if no campaigns
+        total_emails_sent = await db.email_logs.count_documents({"user_id": user_id, "status": {"$in": ["sent", "opened", "clicked"]}})
+        total_emails_opened = await db.email_logs.count_documents({"user_id": user_id, "status": {"$in": ["opened", "clicked"]}})
+        total_emails_clicked = await db.email_logs.count_documents({"user_id": user_id, "status": "clicked"})
     
     open_rate = (total_emails_opened / total_emails_sent * 100) if total_emails_sent > 0 else 0
     click_rate = (total_emails_clicked / total_emails_sent * 100) if total_emails_sent > 0 else 0
@@ -2648,9 +2874,10 @@ async def get_analytics_overview():
     }
 
 @api_router.get("/analytics/campaigns")
-async def get_campaign_analytics():
-    """Get campaign performance analytics"""
-    campaigns = await db.campaigns.find({"status": "sent"}, {"_id": 0}).to_list(1000)
+async def get_campaign_analytics(current_user: Dict = Depends(get_current_user)):
+    """Get campaign performance analytics for the current user"""
+    user_id = current_user["id"]
+    campaigns = await db.campaigns.find({"user_id": user_id, "status": "sent"}, {"_id": 0}).to_list(1000)
     
     analytics = []
     for campaign in campaigns:
@@ -2680,9 +2907,9 @@ async def get_campaign_analytics():
 # ========================
 
 @api_router.post("/ai/generate", response_model=AIGenerateResponse)
-async def generate_ai_content(request: AIGenerateRequest):
+async def generate_ai_content(request: AIGenerateRequest, current_user: Dict = Depends(get_current_user)):
     """Generate email content using AI"""
-    settings = await get_settings()
+    settings = await get_settings(user_id=current_user["id"])
     
     try:
         client = get_openai_client(settings.openai_api_key)

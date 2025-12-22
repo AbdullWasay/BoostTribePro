@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -11,6 +12,7 @@ const COLORS = ['#D91CD2', '#9D1C9D', '#6B136B', '#4A0D4A'];
 
 const Analytics = () => {
   const { t } = useTranslation();
+  const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [campaignAnalytics, setCampaignAnalytics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,8 +24,12 @@ const Analytics = () => {
   const fetchData = async () => {
     try {
       const [statsRes, analyticsRes] = await Promise.all([
-        axios.get(`${API}/analytics/overview`),
-        axios.get(`${API}/analytics/campaigns`)
+        axios.get(`${API}/analytics/overview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/analytics/campaigns`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
       ]);
       setStats(statsRes.data);
       setCampaignAnalytics(analyticsRes.data);

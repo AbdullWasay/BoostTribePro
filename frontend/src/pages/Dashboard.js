@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { Users, Mail, TrendingUp, MousePointerClick } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +11,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Dashboard = () => {
   const { t } = useTranslation();
+  const { token } = useAuth();
   const [stats, setStats] = useState(null);
   const [campaignAnalytics, setCampaignAnalytics] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,8 +23,12 @@ const Dashboard = () => {
   const fetchData = async () => {
     try {
       const [statsRes, analyticsRes] = await Promise.all([
-        axios.get(`${API}/analytics/overview`),
-        axios.get(`${API}/analytics/campaigns`)
+        axios.get(`${API}/analytics/overview`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API}/analytics/campaigns`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
       ]);
       setStats(statsRes.data);
       setCampaignAnalytics(analyticsRes.data);

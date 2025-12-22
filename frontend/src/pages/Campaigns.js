@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
 import { Plus, Send, Calendar, Sparkles, Trash2, Edit, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Campaigns = () => {
   const { t } = useTranslation();
+  const { token } = useAuth();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -54,7 +56,9 @@ const Campaigns = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await axios.get(`${API}/campaigns`);
+      const response = await axios.get(`${API}/campaigns`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setCampaigns(response.data);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -71,7 +75,9 @@ const Campaigns = () => {
         ...formData,
         scheduled_at: formData.scheduled_at || null
       };
-      await axios.post(`${API}/campaigns`, payload);
+      await axios.post(`${API}/campaigns`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('campaigns.campaignCreated'));
       setShowCreateDialog(false);
       resetForm();
@@ -89,7 +95,9 @@ const Campaigns = () => {
         ...formData,
         scheduled_at: formData.scheduled_at || null
       };
-      await axios.put(`${API}/campaigns/${currentCampaign.id}`, payload);
+      await axios.put(`${API}/campaigns/${currentCampaign.id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('campaigns.campaignUpdated'));
       setShowEditDialog(false);
       resetForm();
@@ -104,7 +112,9 @@ const Campaigns = () => {
     if (!window.confirm(t('campaigns.confirmDelete'))) return;
     
     try {
-      await axios.delete(`${API}/campaigns/${campaignId}`);
+      await axios.delete(`${API}/campaigns/${campaignId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('campaigns.campaignDeleted'));
       fetchCampaigns();
     } catch (error) {
@@ -117,7 +127,9 @@ const Campaigns = () => {
     if (!window.confirm('Voulez-vous vraiment envoyer cette campagne maintenant ?')) return;
     
     try {
-      await axios.post(`${API}/campaigns/${campaignId}/send`);
+      await axios.post(`${API}/campaigns/${campaignId}/send`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success('Campagne en cours d\'envoi');
       fetchCampaigns();
     } catch (error) {
@@ -134,6 +146,8 @@ const Campaigns = () => {
         language: formData.language,
         tone: 'professional',
         type: aiType
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       
       if (aiType === 'email') {
@@ -179,7 +193,9 @@ const Campaigns = () => {
         target_tags: campaign.target_tags || []
       };
       
-      await axios.post(`${API}/campaigns`, duplicatedData);
+      await axios.post(`${API}/campaigns`, duplicatedData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('campaigns.campaignDuplicated'));
       fetchCampaigns();
     } catch (error) {
@@ -315,18 +331,16 @@ const Campaigns = () => {
                     </Button>
                   )}
                   
-                  {/* Delete button - not available for sent/sending campaigns */}
-                  {campaign.status !== 'sent' && campaign.status !== 'sending' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleDeleteCampaign(campaign.id)}
-                      variant="ghost"
-                      className="text-red-500 hover:text-red-400"
-                      data-testid={`delete-campaign-${index}`}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  {/* Delete button - available for all campaigns */}
+                  <Button
+                    size="sm"
+                    onClick={() => handleDeleteCampaign(campaign.id)}
+                    variant="ghost"
+                    className="text-red-500 hover:text-red-400"
+                    data-testid={`delete-campaign-${index}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -439,7 +453,20 @@ const Campaigns = () => {
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="edit-campaign-dialog">
           <DialogHeader>
-            <DialogTitle>{t('common.edit')} Campagne</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              {t('common.edit')} Campagne
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIDialog(true)}
+                className="ml-auto"
+                data-testid="open-ai-dialog-edit-button"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                {t('campaigns.useAI')}
+              </Button>
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditCampaign}>
             <div className="space-y-4 py-4">
