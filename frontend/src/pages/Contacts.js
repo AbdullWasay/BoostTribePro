@@ -692,10 +692,15 @@ const Contacts = () => {
                 {filteredContacts.map((contact, index) => (
                   <tr
                     key={contact.id}
-                    className="border-b border-primary/10 hover:bg-muted/30 transition-colors"
+                    className="border-b border-primary/10 hover:bg-muted/30 transition-colors cursor-pointer"
                     data-testid={`contact-row-${index}`}
+                    onClick={() => {
+                      setSelectedContacts([contact.id]);
+                      setBulkChannel('whatsapp');
+                      setShowBulkMessageDialog(true);
+                    }}
                   >
-                    <td className="px-3 sm:px-6 py-3 sm:py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(contact.id)}
@@ -727,7 +732,7 @@ const Contacts = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           size="sm"

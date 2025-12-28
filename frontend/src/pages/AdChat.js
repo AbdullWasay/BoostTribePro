@@ -86,9 +86,12 @@ const AdChat = () => {
       const response = await axios.get(`${API_URL}/api/ad-chat`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setChats(response.data);
+      const fetchedChats = response.data || [];
+      setChats(fetchedChats);
+      return fetchedChats;
     } catch (error) {
       console.error('Error fetching chats:', error);
+      return [];
     }
   };
 
@@ -103,6 +106,118 @@ const AdChat = () => {
       console.error('Error loading chat:', error);
     }
   };
+
+  const handleContactClick = async (contact) => {
+    console.log('=== handleContactClick START ===');
+    console.log('Contact clicked:', contact);
+    console.log('Contact ID:', contact.id);
+    console.log('Contact email:', contact.email);
+    console.log('Contact name:', contact.name);
+    console.log('Contact phone:', contact.phone);
+    
+    try {
+      setLoading(true);
+      
+      // First refresh chats to get the latest list and use the returned value
+      const currentChats = await fetchChats();
+      console.log('All current chats:', currentChats);
+      console.log('Current chats count:', currentChats.length);
+      
+      // Check if there's an existing chat with this contact (by email ONLY, must match exactly)
+      const existingChat = currentChats.find(chat => {
+        // Must have both emails to compare
+        if (!contact.email || !chat.visitor_email) {
+          return false;
+        }
+        
+        const contactEmail = contact.email.toLowerCase().trim();
+        const chatEmail = chat.visitor_email.toLowerCase().trim();
+        const emailMatch = contactEmail === chatEmail;
+        
+        console.log(`Comparing emails: "${contactEmail}" === "${chatEmail}" => ${emailMatch}`);
+        
+        return emailMatch;
+      });
+
+      console.log('Existing chat found?', existingChat);
+      if (existingChat) {
+        console.log('Existing chat details:', {
+          id: existingChat.id,
+          visitor_email: existingChat.visitor_email,
+          visitor_name: existingChat.visitor_name
+        });
+      }
+
+      if (existingChat && existingChat.visitor_email?.toLowerCase().trim() === contact.email?.toLowerCase().trim()) {
+        // Load existing chat - double check email matches
+        console.log('Loading existing chat:', existingChat.id);
+        await loadChatDetails(existingChat.id);
+        toast({
+          title: '✅ Chat trouvé',
+          description: `Conversation avec ${contact.name || contact.email} chargée`
+        });
+      } else {
+        // Create new chat - no existing chat found for this email
+        console.log('No existing chat found. Creating new chat for contact:', contact.email);
+        
+        if (!contact.email) {
+          toast({
+            title: '❌ Erreur',
+            description: 'Le contact doit avoir une adresse email pour démarrer un chat',
+            variant: 'destructive'
+          });
+          return;
+        }
+        
+        const chatData = {
+          ad_id: `contact-chat-${contact.id}-${Date.now()}`,
+          ad_platform: 'contact',
+          ad_campaign_name: 'Direct Contact Chat',
+          visitor_name: contact.name || 'Contact',
+          visitor_email: contact.email.trim(),
+          initial_message: 'Chat démarré depuis les contacts'
+        };
+        
+        // Only include phone if it exists and is not empty
+        if (contact.phone && contact.phone.trim()) {
+          chatData.visitor_phone = contact.phone.trim();
+        }
+        
+        console.log('Sending chat creation request:', chatData);
+        
+        const response = await axios.post(
+          `${API_URL}/api/ad-chat/start`,
+          chatData
+        );
+        
+        console.log('Chat created response:', response.data);
+        
+        const newChat = response.data;
+        setSelectedChat(newChat);
+        setShowMobileChat(true);
+        
+        // Refresh chats list to include the new chat
+        await fetchChats();
+        
+        toast({
+          title: '✅ Chat créé',
+          description: `Nouvelle conversation avec ${contact.name || contact.email}`
+        });
+      }
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      console.error('Error response:', error.response?.data);
+      toast({
+        title: '❌ Erreur',
+        description: error.response?.data?.detail || error.message || 'Impossible de démarrer la conversation',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+      console.log('=== handleContactClick END ===');
+    }
+  };
+
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -183,18 +298,46 @@ const AdChat = () => {
               <div className="mt-4 pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-400 mb-2">{t('contacts.contacts')} ({filteredContacts.length})</p>
                 <div className="space-y-1 max-h-[calc(100vh-28rem)] overflow-y-auto">
-                  {filteredContacts.slice(0, 50).map((contact) => (
-                    <div
-                      key={contact.id}
-                      className="p-2 rounded text-sm bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer"
-                      title={`${contact.name} - ${contact.email}`}
-                    >
-                      <div className="font-medium truncate">{contact.name || contact.email}</div>
-                      {contact.email && (
-                        <div className="text-xs text-gray-400 truncate">{contact.email}</div>
-                      )}
-                    </div>
-                  ))}
+                  {filteredContacts.slice(0, 50).map((contact) => {
+                    const hasExistingChat = chats.some(chat => 
+                      chat.visitor_email?.toLowerCase() === contact.email?.toLowerCase() ||
+                      chat.visitor_phone === contact.phone
+                    );
+                    
+                    return (
+                      <div
+                        key={contact.id}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Contact clicked:', contact);
+                          handleContactClick(contact);
+                        }}
+                        className="p-2 rounded text-sm bg-gray-800/50 hover:bg-gray-700/50 cursor-pointer transition-colors flex items-center justify-between group"
+                        title={hasExistingChat ? `Ouvrir la conversation avec ${contact.name || contact.email}` : `Démarrer une conversation avec ${contact.name || contact.email}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{contact.name || contact.email}</div>
+                          {contact.email && (
+                            <div className="text-xs text-gray-400 truncate">{contact.email}</div>
+                          )}
+                        </div>
+                        <MessageCircle 
+                          className={`h-4 w-4 ml-2 flex-shrink-0 ${
+                            hasExistingChat 
+                              ? 'text-primary' 
+                              : 'text-gray-500 group-hover:text-primary'
+                          }`} 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('Icon clicked for contact:', contact);
+                            handleContactClick(contact);
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                   {filteredContacts.length > 50 && (
                     <p className="text-xs text-gray-500 text-center pt-2">
                       +{filteredContacts.length - 50} {t('common.more', { defaultValue: 'more' })}

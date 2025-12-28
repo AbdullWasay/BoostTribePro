@@ -396,17 +396,17 @@ const Catalog = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">📦 Catalogue</h1>
-          <p className="text-gray-400">{t('catalog.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">📦 Catalogue</h1>
+          <p className="text-sm sm:text-base text-gray-400">{t('catalog.subtitle')}</p>
         </div>
         <Button
           onClick={() => {
             resetForm();
             setShowDialog(true);
           }}
-          className="bg-primary hover:bg-primary/90 glow"
+          className="bg-primary hover:bg-primary/90 glow w-full sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" />
           {t('catalog.createItem')}
@@ -415,10 +415,10 @@ const Catalog = () => {
 
       {/* Filters */}
       <Card className="glass border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex gap-4">
+        <CardContent className="pt-4 sm:pt-6">
+          <div className="flex flex-col sm:flex-row gap-4">
             <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -440,11 +440,11 @@ const Catalog = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="glass border-primary/20 overflow-hidden">
+            <Card key={item.id} className="glass border-primary/20 overflow-hidden w-full">
               {item.image_url && (
-                <div className="h-48 bg-muted overflow-hidden relative">
+                <div className="h-40 sm:h-48 bg-muted overflow-hidden relative">
                   {(() => {
                     const url = item.image_url;
                     // Improved YouTube URL matching
@@ -537,37 +537,37 @@ const Catalog = () => {
                 </div>
               )}
               {!item.image_url && (
-                <div className="h-48 bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-                  <Package className="h-16 w-16 text-primary/50" />
+                <div className="h-40 sm:h-48 bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+                  <Package className="h-12 w-12 sm:h-16 sm:w-16 text-primary/50" />
                 </div>
               )}
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg mb-2">{item.title}</CardTitle>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Badge variant="outline" className="border-primary/30">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base sm:text-lg mb-2 break-words">{item.title}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      <Badge variant="outline" className="border-primary/30 text-xs">
                         {getCategoryIcon(item.category)}
                         <span className="ml-1">{getCategoryLabel(item.category)}</span>
                       </Badge>
-                      <Badge className={item.is_published ? 'bg-green-500' : 'bg-gray-500'}>
+                      <Badge className={`text-xs ${item.is_published ? 'bg-green-500' : 'bg-gray-500'}`}>
                         {item.is_published ? t('catalog.published') : t('catalog.draft')}
                       </Badge>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-gray-400 mb-4 line-clamp-2">
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <p className="text-xs sm:text-sm text-gray-400 mb-4 line-clamp-2">
                   {item.description}
                 </p>
                 
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-2xl font-bold text-primary">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                  <div className="text-xl sm:text-2xl font-bold text-primary">
                     {item.price} {item.currency}
                   </div>
                   {item.max_attendees && (
-                    <div className="text-sm text-gray-400">
+                    <div className="text-xs sm:text-sm text-gray-400">
                       {item.current_attendees}/{item.max_attendees} {t('catalog.places')}
                     </div>
                   )}
@@ -575,7 +575,7 @@ const Catalog = () => {
 
                 {/* Date display - Recurring or one-time */}
                 {item.is_recurring ? (
-                  <div className="text-sm text-gray-400 mb-4">
+                  <div className="text-xs sm:text-sm text-gray-400 mb-4 break-words">
                     {t('catalog.recurringCourseLabel')} {Array.isArray(item.recurrence_days) && item.recurrence_days.length > 0 ? (
                       <>
                         {item.recurrence_days.map(day => t(`catalog.days.${day}`)).join(', ')}
@@ -584,7 +584,7 @@ const Catalog = () => {
                     {item.recurrence_time && ` ${t('catalog.at')} ${item.recurrence_time}`}
                   </div>
                 ) : item.event_date && (
-                  <div className="text-sm text-gray-400 mb-4">
+                  <div className="text-xs sm:text-sm text-gray-400 mb-4 break-words">
                     📅 {new Date(item.event_date).toLocaleDateString(i18n.language, {
                       day: 'numeric',
                       month: 'long',
@@ -597,22 +597,25 @@ const Catalog = () => {
 
                 <div className="space-y-2">
                   {/* Action buttons */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(item)}
-                      className="flex-1"
+                      className="flex-1 min-w-[100px] text-xs sm:text-sm"
                     >
-                      <Edit className="mr-1 h-3 w-3" />
-                      {t('catalog.edit')}
+                      <Edit className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">{t('catalog.edit')}</span>
+                      <span className="sm:hidden">{t('catalog.edit')}</span>
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewPublic(item)}
+                      className="flex-shrink-0"
+                      title={t('catalog.viewPublic') || 'View Public'}
                     >
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -621,51 +624,55 @@ const Catalog = () => {
                         e.stopPropagation();
                         handleDelete(item.id);
                       }}
-                      className="text-red-500 hover:text-red-600"
+                      className="text-red-500 hover:text-red-600 flex-shrink-0"
+                      title={t('common.delete') || 'Delete'}
                     >
-                      <Trash2 className="h-3 w-3" />
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                   </div>
 
                   {/* Reserve button (prominent) */}
                   {(item.category === 'course' || item.category === 'event') && (
                     <Button
-                      className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 mt-3"
+                      className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 mt-3 text-sm sm:text-base"
                       onClick={() => handleReserve(item)}
                     >
-                      <Calendar className="mr-2 h-4 w-4" />
-                      {t('catalog.reserve')} {item.price > 0 ? `(${item.price} ${item.currency})` : `(${t('catalog.free')})`}
+                      <Calendar className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="break-words">{t('catalog.reserve')} {item.price > 0 ? `(${item.price} ${item.currency})` : `(${t('catalog.free')})`}</span>
                     </Button>
                   )}
 
                   {/* Share buttons */}
-                  <div className="flex gap-2 pt-2 border-t border-gray-700">
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-700">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleShareWhatsApp(item)}
-                      className="flex-1 text-xs"
+                      className="flex-1 min-w-[100px] text-xs"
                     >
-                      <MessageCircle className="mr-1 h-3 w-3" />
-                      {t('catalog.whatsapp')}
+                      <MessageCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">{t('catalog.whatsapp')}</span>
+                      <span className="sm:hidden">WA</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleShareEmail(item)}
-                      className="flex-1 text-xs"
+                      className="flex-1 min-w-[100px] text-xs"
                     >
-                      <Mail className="mr-1 h-3 w-3" />
-                      {t('catalog.email')}
+                      <Mail className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">{t('catalog.email')}</span>
+                      <span className="sm:hidden">Email</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCopyLink(item)}
-                      className="flex-1 text-xs"
+                      className="flex-1 min-w-[100px] text-xs"
                     >
-                      <Copy className="mr-1 h-3 w-3" />
-                      {t('catalog.link')}
+                      <Copy className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">{t('catalog.link')}</span>
+                      <span className="sm:hidden">Link</span>
                     </Button>
                   </div>
                 </div>

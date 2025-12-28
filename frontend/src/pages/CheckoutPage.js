@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ShoppingCart, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 
@@ -14,7 +14,6 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 const CheckoutPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toast } = useToast();
   
   const productId = searchParams.get('product_id');
   const initialQuantity = parseInt(searchParams.get('quantity') || '1');
@@ -39,15 +38,12 @@ const CheckoutPage = () => {
 
   const fetchProduct = async () => {
     try {
+      // The /api/catalog/{item_id} endpoint is public and doesn't require authentication
       const response = await axios.get(`${API_URL}/api/catalog/${productId}`);
       setProduct(response.data);
     } catch (error) {
       console.error('Error fetching product:', error);
-      toast({
-        title: '❌ Erreur',
-        description: 'Produit introuvable',
-        variant: 'destructive'
-      });
+      toast.error(error.response?.data?.detail || 'Produit introuvable');
     } finally {
       setLoading(false);
     }
@@ -58,15 +54,28 @@ const CheckoutPage = () => {
     setSubmitting(true);
     
     try {
-      // Call real Stripe checkout route
-      const response = await axios.post(`${API_URL}/api/reservations/checkout`, {
+      // Build query parameters
+      const params = new URLSearchParams({
         catalog_item_id: productId,
-        quantity: formData.quantity,
+        quantity: formData.quantity.toString(),
         customer_name: formData.customer_name,
         customer_email: formData.customer_email,
-        customer_phone: formData.customer_phone,
-        origin_url: window.location.origin
       });
+      
+      // Add optional parameters if they exist
+      if (formData.customer_phone) {
+        params.append('customer_phone', formData.customer_phone);
+      }
+      if (window.location.origin) {
+        params.append('origin_url', window.location.origin);
+      }
+      
+      console.log('Sending checkout request:', `${API_URL}/api/reservations/checkout?${params.toString()}`);
+      
+      // Call real Stripe checkout route with query parameters
+      const response = await axios.post(`${API_URL}/api/reservations/checkout?${params.toString()}`);
+      
+      console.log('Checkout response:', response.data);
       
       // Redirect to Stripe Checkout
       if (response.data.url) {
@@ -76,12 +85,37 @@ const CheckoutPage = () => {
       }
       
     } catch (error) {
-      console.error('Error creating checkout:', error);
-      toast({
-        title: '❌ Erreur',
-        description: error.response?.data?.detail || 'Erreur lors de la création de la session de paiement',
-        variant: 'destructive'
+      console.error('=== CHECKOUT ERROR ===');
+      console.error('Error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error response status:', error.response?.status);
+      
+      // Handle different error formats
+      let errorMessage = 'Erreur lors de la création de la session de paiement';
+      
+      if (error.response?.data) {
+        // Check if detail is a string or an array
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          // If it's an array of validation errors, show the first one
+          errorMessage = error.response.data.detail[0]?.msg || errorMessage;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      console.log('Displaying error message:', errorMessage);
+      
+      // Show toast notification using sonner
+      toast.error(errorMessage, {
+        duration: 5000,
+        description: 'Veuillez configurer vos clés Stripe dans les paramètres'
       });
+      
       setSubmitting(false);
     }
   };
@@ -101,7 +135,7 @@ const CheckoutPage = () => {
           <CardContent className="py-12 text-center">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <p className="text-white text-xl mb-4">Produit introuvable</p>
-            <Button onClick={() => navigate('/catalog/public')}>
+            <Button onClick={() => navigate('/catalog')}>
               Retour au catalogue
             </Button>
           </CardContent>
@@ -127,7 +161,7 @@ const CheckoutPage = () => {
             <div className="space-y-2">
               <Button
                 className="w-full"
-                onClick={() => navigate('/catalog/public')}
+                onClick={() => navigate('/catalog')}
               >
                 Retour au catalogue
               </Button>
