@@ -166,7 +166,7 @@ const ProductPage = () => {
         <Card className="glass border-primary/20 max-w-md">
           <CardContent className="py-12 text-center">
             <p className="text-white text-xl mb-4">Produit introuvable</p>
-            <Button onClick={() => navigate('/catalog/public')}>
+            <Button onClick={() => navigate('/catalog')}>
               Voir le catalogue
             </Button>
           </CardContent>
@@ -187,7 +187,7 @@ const ProductPage = () => {
         <Button
           variant="outline"
           className="mb-6"
-          onClick={() => navigate('/catalog/public')}
+          onClick={() => navigate('/catalog')}
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
           Retour au catalogue
