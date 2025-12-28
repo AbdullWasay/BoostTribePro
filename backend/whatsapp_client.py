@@ -35,7 +35,7 @@ class WhatsAppClient:
         self,
         recipient_phone: str,
         message_text: str,
-        preview_url: bool = True
+        preview_url: bool = False
     ) -> Dict[str, Any]:
         """
         Send a simple text message

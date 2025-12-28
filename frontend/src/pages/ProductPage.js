@@ -22,6 +22,71 @@ const ProductPage = () => {
     fetchProduct();
   }, [slug]);
 
+  // Update meta tags for Open Graph (WhatsApp/Facebook link previews)
+  useEffect(() => {
+    if (product) {
+      const productUrl = window.location.href;
+      let productImage = product.image_url || `${window.location.origin}/logo512.png`;
+      
+      // Check if image_url is a YouTube URL and extract thumbnail
+      if (product.image_url) {
+        const youtubeMatch = product.image_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
+        if (youtubeMatch) {
+          const videoId = youtubeMatch[1];
+          productImage = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        }
+      }
+      
+      const productTitle = product.title;
+      const productDescription = product.description || `${product.title} - ${product.price} ${product.currency}`;
+      
+      // Update or create OG meta tags
+      const updateMetaTag = (property, content) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', property);
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      };
+
+      // Update title
+      document.title = productTitle;
+
+      // Update OG tags
+      updateMetaTag('og:title', productTitle);
+      updateMetaTag('og:description', productDescription);
+      updateMetaTag('og:image', productImage);
+      updateMetaTag('og:url', productUrl);
+      updateMetaTag('og:type', 'product');
+
+      // Update Twitter card tags
+      updateMetaTag('twitter:card', 'summary_large_image');
+      updateMetaTag('twitter:title', productTitle);
+      updateMetaTag('twitter:description', productDescription);
+      updateMetaTag('twitter:image', productImage);
+
+      // Update description meta tag
+      let descMeta = document.querySelector('meta[name="description"]');
+      if (!descMeta) {
+        descMeta = document.createElement('meta');
+        descMeta.setAttribute('name', 'description');
+        document.head.appendChild(descMeta);
+      }
+      descMeta.setAttribute('content', productDescription);
+    }
+
+    // Cleanup: restore default meta tags when component unmounts
+    return () => {
+      document.title = 'BoostTribe - Marketing Multicanal Intelligent';
+      const defaultOGTitle = document.querySelector('meta[property="og:title"]');
+      if (defaultOGTitle) {
+        defaultOGTitle.setAttribute('content', 'BoostTribe - Marketing Multicanal Intelligent');
+      }
+    };
+  }, [product]);
+
   const fetchProduct = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/catalog/public/${slug}`);

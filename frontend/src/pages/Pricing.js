@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Check, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { toast } from 'sonner';
 
 const Pricing = () => {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   const handleSubscribe = (planName) => {
     toast.success(`Intérêt pour ${planName} enregistré ! Contactez-nous pour finaliser.`);
@@ -267,7 +269,7 @@ const Pricing = () => {
               <Button 
                 size="lg" 
                 className="bg-primary hover:bg-primary/90 glow" 
-                onClick={() => toast.success('Inscription en cours de développement !')}
+                onClick={() => navigate('/register')}
                 data-testid="cta-start-now"
               >
                 <Sparkles className="mr-2 h-5 w-5" />

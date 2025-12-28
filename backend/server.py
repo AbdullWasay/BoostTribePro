@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, File, UploadFile, BackgroundTasks, Request, Depends
-from fastapi.responses import Response, RedirectResponse, JSONResponse
+from fastapi.responses import Response, RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -6497,6 +6497,97 @@ async def update_attendance(
 
 
 app.include_router(api_router)
+
+# Product page HTML endpoint for WhatsApp/Facebook crawlers (outside /api prefix)
+@app.get("/p/{slug}", response_class=HTMLResponse)
+async def get_product_page_html(slug: str, request: Request):
+    """
+    Server-side HTML endpoint for product pages with OG meta tags.
+    This ensures WhatsApp/Facebook crawlers see product-specific meta tags (no platform branding).
+    """
+    item = await db.catalog_items.find_one({"slug": slug, "is_published": True}, {"_id": 0})
+    
+    if not item:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Get product details
+    product_title = item.get('title', 'Product')
+    product_description = item.get('description', '')
+    product_image = item.get('image_url', '')
+    product_price = item.get('price', 0)
+    product_currency = item.get('currency', 'CHF')
+    
+    # Build product URL
+    base_url = str(request.base_url).rstrip('/')
+    product_url = f"{base_url}/p/{slug}"
+    
+    # Check if image_url is a YouTube URL and extract thumbnail
+    youtube_match = None
+    if product_image:
+        youtube_match = re.search(r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)', product_image)
+    
+    if youtube_match:
+        # Extract YouTube video ID and use YouTube thumbnail
+        video_id = youtube_match.group(1)
+        product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+    elif not product_image:
+        # If no image, use a default or empty
+        product_image = f"{base_url}/logo512.png"
+    
+    # Build description with price if available
+    if product_price:
+        full_description = f"{product_description} - {product_price} {product_currency}"
+    else:
+        full_description = product_description or product_title
+    
+    # Escape HTML special characters
+    def escape_html(text):
+        if not text:
+            return ""
+        return (str(text)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace('"', "&quot;")
+                .replace("'", "&#x27;"))
+    
+    # Create HTML with proper OG meta tags (no platform branding)
+    html_content = f"""<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{escape_html(product_title)}</title>
+    <meta name="description" content="{escape_html(full_description)}">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="product">
+    <meta property="og:title" content="{escape_html(product_title)}">
+    <meta property="og:description" content="{escape_html(full_description)}">
+    <meta property="og:image" content="{escape_html(product_image)}">
+    <meta property="og:url" content="{escape_html(product_url)}">
+    <meta property="og:site_name" content="">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{escape_html(product_title)}">
+    <meta name="twitter:description" content="{escape_html(full_description)}">
+    <meta name="twitter:image" content="{escape_html(product_image)}">
+    
+    <!-- Redirect to React app -->
+    <script>
+        window.location.href = '/p/{slug}';
+    </script>
+    <noscript>
+        <meta http-equiv="refresh" content="0; url=/p/{slug}">
+    </noscript>
+</head>
+<body>
+    <p>Redirecting to product page... <a href="/p/{slug}">Click here</a></p>
+</body>
+</html>"""
+    
+    return HTMLResponse(content=html_content)
 
 app.add_middleware(
     CORSMiddleware,
