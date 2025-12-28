@@ -455,12 +455,12 @@ const Contacts = () => {
   }
 
   return (
-    <div className="space-y-6" data-testid="contacts-page">
+    <div className="space-y-4 sm:space-y-6 pb-6" data-testid="contacts-page">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-4xl font-bold mb-2" data-testid="contacts-title">{t('contacts.title')}</h1>
-          <p className="text-gray-400">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2" data-testid="contacts-title">{t('contacts.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-400">
             {contacts.length} contacts
             {selectedContacts.length > 0 && (
               <span className="ml-2 text-primary font-medium">
@@ -469,10 +469,11 @@ const Contacts = () => {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 w-full md:w-auto">
           <Button
             onClick={() => setShowAddDialog(true)}
             className="bg-primary hover:bg-primary/90 glow"
+            size="sm"
             data-testid="add-contact-button"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -481,6 +482,7 @@ const Contacts = () => {
           <Button
             onClick={() => fileInputRef.current?.click()}
             variant="outline"
+            size="sm"
             data-testid="import-contacts-button"
           >
             <Upload className="mr-2 h-4 w-4" />
@@ -490,6 +492,7 @@ const Contacts = () => {
             onClick={handleExport}
             variant="outline"
             disabled={contacts.length === 0}
+            size="sm"
             data-testid="export-contacts-button"
           >
             <Download className="mr-2 h-4 w-4" />
@@ -500,6 +503,7 @@ const Contacts = () => {
             variant="destructive"
             disabled={contacts.length === 0}
             className="text-red-500 hover:bg-red-500/10"
+            size="sm"
             data-testid="bulk-delete-contacts-button"
           >
             <Trash2 className="mr-2 h-4 w-4" />
@@ -509,6 +513,7 @@ const Contacts = () => {
             onClick={() => setShowGroupDialog(true)}
             variant="outline"
             className="border-primary/50"
+            size="sm"
             data-testid="manage-groups-button"
           >
             <Edit className="mr-2 h-4 w-4" />
@@ -526,7 +531,7 @@ const Contacts = () => {
 
       {/* Stats Cards */}
       {contactsStats && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           <Card className="glass border-primary/20">
             <CardContent className="pt-6">
               <div className="text-2xl font-bold text-gradient">{contactsStats.total}</div>
@@ -562,8 +567,8 @@ const Contacts = () => {
 
       {/* Filters */}
       <Card className="glass border-primary/20">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <CardContent className="pt-4 sm:pt-6 p-4 sm:p-6">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -578,7 +583,7 @@ const Contacts = () => {
               </div>
             </div>
             <Select value={selectedGroup} onValueChange={setSelectedGroup}>
-              <SelectTrigger className="w-full md:w-48" data-testid="filter-group-select">
+              <SelectTrigger className="w-full md:w-48 flex-shrink-0" data-testid="filter-group-select">
                 <SelectValue placeholder={t('contacts.filterByGroup')} />
               </SelectTrigger>
               <SelectContent>
@@ -589,7 +594,7 @@ const Contacts = () => {
               </SelectContent>
             </Select>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-              <SelectTrigger className="w-full md:w-48" data-testid="filter-status-select">
+              <SelectTrigger className="w-full md:w-48 flex-shrink-0" data-testid="filter-status-select">
                 <SelectValue placeholder={t('contacts.filterByStatus')} />
               </SelectTrigger>
               <SelectContent>
@@ -660,26 +665,27 @@ const Contacts = () => {
       {/* Contacts Table */}
       <Card className="glass border-primary/20">
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full" data-testid="contacts-table">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
+            <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+              <table className="min-w-full divide-y divide-primary/20" data-testid="contacts-table">
               <thead>
                 <tr className="border-b border-primary/20">
-                  <th className="px-6 py-4 text-left">
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left">
                     <input
                       type="checkbox"
                       checked={selectedContacts.length === filteredContacts.length && filteredContacts.length > 0}
                       onChange={handleSelectAll}
-                      className="w-5 h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer"
+                      className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer"
                       title={t('contacts.selectAll')}
                     />
                   </th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.name')}</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.email')}</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.phone')}</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.group')}</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.status')}</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-400">{t('contacts.tags')}</th>
-                  <th className="px-6 py-4 text-right text-sm font-medium text-gray-400">{t('contacts.actions')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400">{t('contacts.name')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400 hidden md:table-cell">{t('contacts.email')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400 hidden lg:table-cell">{t('contacts.phone')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400 hidden sm:table-cell">{t('contacts.group')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400">{t('contacts.status')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs sm:text-sm font-medium text-gray-400 hidden lg:table-cell">{t('contacts.tags')}</th>
+                  <th className="px-3 sm:px-6 py-3 sm:py-4 text-right text-xs sm:text-sm font-medium text-gray-400">{t('contacts.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -689,24 +695,29 @@ const Contacts = () => {
                     className="border-b border-primary/10 hover:bg-muted/30 transition-colors"
                     data-testid={`contact-row-${index}`}
                   >
-                    <td className="px-6 py-4">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4">
                       <input
                         type="checkbox"
                         checked={selectedContacts.includes(contact.id)}
                         onChange={() => handleSelectContact(contact.id)}
-                        className="w-5 h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer"
+                        className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer"
                       />
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-white">{contact.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-300">{contact.email}</td>
-                    <td className="px-6 py-4 text-sm text-gray-300">{contact.phone || '-'}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <Badge variant="outline" className="border-primary/30">{contact.group}</Badge>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-white">
+                      <div className="flex flex-col">
+                        <span>{contact.name}</span>
+                        <span className="text-xs text-gray-400 md:hidden mt-0.5">{contact.email}</span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-300 hidden md:table-cell">{contact.email}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-300 hidden lg:table-cell">{contact.phone || '-'}</td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden sm:table-cell">
+                      <Badge variant="outline" className="border-primary/30 text-xs">{contact.group}</Badge>
+                    </td>
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm">
                       {getStatusBadge(contact.subscription_status || 'non-subscriber')}
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm hidden lg:table-cell">
                       <div className="flex flex-wrap gap-1">
                         {contact.tags.slice(0, 2).map((tag, i) => (
                           <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
@@ -716,8 +727,8 @@ const Contacts = () => {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
+                    <td className="px-3 sm:px-6 py-3 sm:py-4 text-right">
+                      <div className="flex justify-end gap-1 sm:gap-2">
                         <Button
                           size="sm"
                           variant="ghost"
@@ -754,8 +765,9 @@ const Contacts = () => {
                 ))}
               </tbody>
             </table>
+            </div>
             {filteredContacts.length === 0 && (
-              <div className="text-center py-12 text-gray-400" data-testid="no-contacts-message">
+              <div className="text-center py-12 text-gray-400 px-4" data-testid="no-contacts-message">
                 {t('contacts.noContactsFound')}
               </div>
             )}

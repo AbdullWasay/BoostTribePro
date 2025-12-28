@@ -48,9 +48,11 @@ const WhatsAppCampaignsAdvanced = () => {
   
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [editingCampaign, setEditingCampaign] = useState(null);
   
   // Form states
   const [campaignForm, setCampaignForm] = useState({
@@ -240,6 +242,99 @@ const WhatsAppCampaignsAdvanced = () => {
     }
   };
 
+  const updateCampaign = async () => {
+    try {
+      const response = await fetch(`${API}/whatsapp/advanced-campaigns/${editingCampaign.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(campaignForm)
+      });
+
+      if (response.ok) {
+        toast({
+          title: t('whatsappAdvanced.campaignUpdated'),
+          description: t('whatsappAdvanced.campaignUpdatedDesc')
+        });
+        setShowEditDialog(false);
+        fetchCampaigns();
+        resetForm();
+        setEditingCampaign(null);
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: t('common.error'),
+          description: errorData.detail || t('whatsappAdvanced.errorUpdating'),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error updating campaign:', error);
+        toast({
+          title: t('whatsappAdvanced.errorUpdating'),
+          description: t('whatsappAdvanced.errorUpdatingDesc'),
+          variant: "destructive"
+        });
+    }
+  };
+
+  const deleteCampaign = async (campaignId) => {
+    if (!window.confirm(t('whatsappAdvanced.confirmDelete'))) return;
+    
+    try {
+      const response = await fetch(`${API}/whatsapp/advanced-campaigns/${campaignId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        toast({
+          title: t('whatsappAdvanced.campaignDeleted'),
+          description: t('whatsappAdvanced.campaignDeletedDesc')
+        });
+        fetchCampaigns();
+      } else {
+        const errorData = await response.json();
+        toast({
+          title: t('common.error'),
+          description: errorData.detail || t('whatsappAdvanced.errorDeleting'),
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting campaign:', error);
+        toast({
+          title: t('whatsappAdvanced.errorDeleting'),
+          description: t('whatsappAdvanced.errorDeletingDesc'),
+          variant: "destructive"
+        });
+    }
+  };
+
+  const openEditDialog = (campaign) => {
+    setEditingCampaign(campaign);
+    setCampaignForm({
+      title: campaign.title || '',
+      message_content: campaign.message_content || '',
+      language: campaign.language || 'fr',
+      buttons: campaign.buttons || [],
+      list_sections: campaign.list_sections || [],
+      media_url: campaign.media_url || '',
+      media_type: campaign.media_type || null,
+      target_contacts: campaign.target_contacts || [],
+      target_tags: campaign.target_tags || [],
+      target_status: campaign.target_status || null,
+      use_personalization: campaign.use_personalization || false,
+      scheduled_at: campaign.scheduled_at ? new Date(campaign.scheduled_at).toISOString().slice(0, 16) : '',
+      payment_links: campaign.payment_links || []
+    });
+    setShowEditDialog(true);
+  };
+
   const sendCampaign = async (campaignId) => {
     try {
       const response = await fetch(`${API}/whatsapp/advanced-campaigns/${campaignId}/send`, {
@@ -352,6 +447,7 @@ const WhatsAppCampaignsAdvanced = () => {
       scheduled_at: '',
       payment_links: []
     });
+    setEditingCampaign(null);
   };
 
   const formatDateTime = (dateStr) => {
@@ -403,7 +499,10 @@ const WhatsAppCampaignsAdvanced = () => {
             {t('whatsappAdvanced.templates')}
           </Button>
           <Button 
-            onClick={() => setShowCreateDialog(true)} 
+            onClick={() => {
+              resetForm();
+              setShowCreateDialog(true);
+            }} 
             className="bg-gradient-to-r from-pink-500 to-purple-600 w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -507,6 +606,22 @@ const WhatsAppCampaignsAdvanced = () => {
                   </div>
 
                   <div className="flex gap-2">
+                    <Button
+                      onClick={() => openEditDialog(campaign)}
+                      size="sm"
+                      variant="outline"
+                      className="border-primary/50"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      onClick={() => deleteCampaign(campaign.id)}
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                     {campaign.status === 'draft' && (
                       <Button
                         onClick={() => sendCampaign(campaign.id)}
@@ -898,11 +1013,372 @@ const WhatsAppCampaignsAdvanced = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+            <Button variant="outline" onClick={() => {
+              setShowCreateDialog(false);
+              resetForm();
+            }}>
               {t('whatsappAdvanced.cancel')}
             </Button>
             <Button onClick={createCampaign} className="bg-gradient-to-r from-pink-500 to-purple-600">
               {t('whatsappAdvanced.create')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Campaign Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open);
+        if (!open) {
+          resetForm();
+        }
+      }}>
+        <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>✏️ {t('whatsappAdvanced.editCampaign') || 'Edit Campaign'}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <div className="space-y-4">
+              <div>
+                <Label>{t('whatsappAdvanced.campaignTitle')}</Label>
+                <Input
+                  value={campaignForm.title}
+                  onChange={(e) => setCampaignForm({...campaignForm, title: e.target.value})}
+                  placeholder={t('whatsappAdvanced.campaignTitlePlaceholder')}
+                />
+              </div>
+
+              {/* Message Editor */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <Label>{t('whatsappAdvanced.messageContent')}</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                      title={t('whatsappAdvanced.addEmoji')}
+                    >
+                      <Smile className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowProductSelector(!showProductSelector)}
+                      className="text-primary"
+                      title={t('whatsappAdvanced.insertProductLink')}
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowPreview(!showPreview)}
+                    >
+                      {showPreview ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {t('whatsappAdvanced.preview')}
+                    </Button>
+                  </div>
+                </div>
+
+                <Textarea
+                  value={campaignForm.message_content}
+                  onChange={(e) => setCampaignForm({...campaignForm, message_content: e.target.value})}
+                  placeholder={t('whatsappAdvanced.messagePlaceholder')}
+                  rows={6}
+                  className="font-mono"
+                />
+
+                {showEmojiPicker && (
+                  <div className="mt-2">
+                    <EmojiPicker onEmojiClick={handleEmojiClick} width="100%" />
+                  </div>
+                )}
+
+                {showProductSelector && (
+                  <div className="mt-2 p-4 rounded-lg bg-background border border-primary/20">
+                    <ProductLinkSelector
+                      onSelectProduct={handleProductSelect}
+                      onClose={() => setShowProductSelector(false)}
+                    />
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500 mt-2">
+                  {t('whatsappAdvanced.personalizationHint')}
+                </p>
+              </div>
+
+              {/* Media URL (Image/Video) */}
+              <div>
+                <Label htmlFor="edit_media_url">{t('whatsappAdvanced.mediaUrl')}</Label>
+                <Input
+                  id="edit_media_url"
+                  value={campaignForm.media_url}
+                  onChange={(e) => setCampaignForm({...campaignForm, media_url: e.target.value})}
+                  placeholder={t('whatsappAdvanced.mediaUrlPlaceholder')}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {t('whatsappAdvanced.mediaHint')}
+                </p>
+                {campaignForm.media_url && (() => {
+                  const url = campaignForm.media_url;
+                  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
+                  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+                  
+                  if (youtubeMatch) {
+                    const videoId = youtubeMatch[1];
+                    return (
+                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
+                        <p className="text-xs text-gray-400 mb-1">Aperçu YouTube :</p>
+                        <div className="relative w-48 h-36 group">
+                          <img 
+                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                            alt="YouTube preview" 
+                            className="w-full h-full object-cover rounded"
+                            onError={(e) => {
+                              e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/60 transition-colors rounded">
+                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
+                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else if (vimeoMatch) {
+                    return (
+                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
+                        <p className="text-xs text-gray-400 mb-1">Aperçu Vimeo :</p>
+                        <div className="w-48 h-36 bg-black rounded flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
+                            </div>
+                            <p className="text-xs text-gray-300">Vidéo Vimeo</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
+                        <p className="text-xs text-gray-400 mb-1">Aperçu image :</p>
+                        <img 
+                          src={url} 
+                          alt="Media preview" 
+                          className="w-48 h-36 object-cover rounded"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<p class="text-xs text-red-400">❌ Impossible de charger l\'aperçu. Vérifiez l\'URL.</p>';
+                          }}
+                        />
+                      </div>
+                    );
+                  }
+                })()}
+              </div>
+
+              {/* WhatsApp Preview */}
+              {showPreview && campaignForm.message_content && (
+                <div className="p-4 bg-gradient-to-br from-teal-900/20 to-green-900/20 rounded-lg border border-green-500/30">
+                  <Label className="text-xs text-gray-400 mb-2 block">{t('whatsappAdvanced.whatsappPreview')}</Label>
+                  <div className="bg-white/10 rounded-lg p-3 backdrop-blur">
+                    {campaignForm.media_url && (() => {
+                      const url = campaignForm.media_url;
+                      const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
+                      const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+                      
+                      if (youtubeMatch) {
+                        const videoId = youtubeMatch[1];
+                        return (
+                          <div className="relative w-full h-48 mb-2 group">
+                            <img 
+                              src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
+                              alt="YouTube" 
+                              className="w-full h-full object-cover rounded"
+                              onError={(e) => {
+                                e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded">
+                              <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
+                                <div className="w-0 h-0 border-t-10 border-t-transparent border-l-14 border-l-white border-b-10 border-b-transparent ml-1"></div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      } else if (vimeoMatch) {
+                        return (
+                          <div className="w-full h-48 bg-black rounded mb-2 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                                <div className="w-0 h-0 border-t-10 border-t-transparent border-l-14 border-l-white border-b-10 border-b-transparent ml-1"></div>
+                              </div>
+                              <p className="text-sm text-gray-300">Vidéo Vimeo</p>
+                            </div>
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <img 
+                            src={url} 
+                            alt="Media" 
+                            className="w-full rounded mb-2 max-h-64 object-cover"
+                            onError={(e) => e.target.style.display = 'none'}
+                          />
+                        );
+                      }
+                    })()}
+                    <div className="text-sm whitespace-pre-wrap">{campaignForm.message_content}</div>
+                    {campaignForm.buttons.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {campaignForm.buttons.map((btn, idx) => (
+                          <div key={idx} className="bg-white/5 rounded px-3 py-2 text-center text-sm border border-white/20">
+                            {btn.text}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Interactive Elements */}
+            <div className="space-y-4 p-4 rounded-lg bg-background/50 border border-primary/20">
+              <h3 className="font-semibold flex items-center gap-2">
+                <MessageCircle className="h-5 w-5" />
+                {t('whatsappAdvanced.interactiveElements')}
+              </h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>{t('whatsappAdvanced.buttonType')}</Label>
+                  <Select
+                    value={currentButton.type}
+                    onValueChange={(value) => setCurrentButton({...currentButton, type: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="reply">{t('whatsappAdvanced.replyButton')}</SelectItem>
+                      <SelectItem value="url">{t('whatsappAdvanced.urlButton')}</SelectItem>
+                      <SelectItem value="call">{t('whatsappAdvanced.callButton')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>{t('whatsappAdvanced.buttonText')}</Label>
+                  <Input
+                    value={currentButton.text}
+                    onChange={(e) => setCurrentButton({...currentButton, text: e.target.value})}
+                    placeholder={t('whatsappAdvanced.buttonTextPlaceholder')}
+                  />
+                </div>
+
+                {currentButton.type === 'url' && (
+                  <div className="col-span-2">
+                    <Label>{t('whatsappAdvanced.url')}</Label>
+                    <Input
+                      value={currentButton.url}
+                      onChange={(e) => setCurrentButton({...currentButton, url: e.target.value})}
+                      placeholder="https://..."
+                    />
+                  </div>
+                )}
+
+                {currentButton.type === 'call' && (
+                  <div className="col-span-2">
+                    <Label>{t('whatsappAdvanced.phoneNumber')}</Label>
+                    <Input
+                      value={currentButton.phone_number}
+                      onChange={(e) => setCurrentButton({...currentButton, phone_number: e.target.value})}
+                      placeholder={t('whatsappAdvanced.phonePlaceholder')}
+                    />
+                  </div>
+                )}
+              </div>
+
+              <Button type="button" onClick={addButton} variant="outline" className="w-full">
+                <Plus className="mr-2 h-4 w-4" />
+                {t('whatsappAdvanced.addButton')}
+              </Button>
+
+              {campaignForm.buttons.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-gray-400">{t('whatsappAdvanced.addedButtons')}</Label>
+                  {campaignForm.buttons.map((btn, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-2 bg-background/30 rounded">
+                      <span className="text-sm">{btn.text} ({btn.type})</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeButton(idx)}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Targeting */}
+            <div className="space-y-4 p-4 rounded-lg bg-background/50 border border-primary/20">
+              <h3 className="font-semibold flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                {t('whatsappAdvanced.targeting')}
+              </h3>
+
+              <div>
+                <Label>{t('whatsappAdvanced.contactStatus')}</Label>
+                <Select
+                  value={campaignForm.target_status || ''}
+                  onValueChange={(value) => setCampaignForm({...campaignForm, target_status: value || null})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('whatsappAdvanced.allContacts')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('whatsappAdvanced.allContacts')}</SelectItem>
+                    <SelectItem value="active">{t('whatsappAdvanced.activeContacts')}</SelectItem>
+                    <SelectItem value="inactive">{t('whatsappAdvanced.inactiveContacts')}</SelectItem>
+                    <SelectItem value="vip">{t('whatsappAdvanced.vipContacts')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>{t('whatsappAdvanced.scheduling')}</Label>
+                <Input
+                  type="datetime-local"
+                  value={campaignForm.scheduled_at}
+                  onChange={(e) => setCampaignForm({...campaignForm, scheduled_at: e.target.value})}
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowEditDialog(false);
+              resetForm();
+            }}>
+              {t('whatsappAdvanced.cancel')}
+            </Button>
+            <Button onClick={updateCampaign} className="bg-gradient-to-r from-pink-500 to-purple-600">
+              {t('whatsappAdvanced.save') || 'Save'}
             </Button>
           </DialogFooter>
         </DialogContent>

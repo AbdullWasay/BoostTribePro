@@ -208,10 +208,12 @@ const Discounts = () => {
             {t('discounts.subtitle')}
           </p>
         </div>
-        <Button onClick={() => { setShowCreateForm(!showCreateForm); setEditingDiscount(null); resetForm(); }}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('discounts.createDiscount')}
-        </Button>
+        {discounts.length > 0 && (
+          <Button onClick={() => { setShowCreateForm(!showCreateForm); setEditingDiscount(null); resetForm(); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('discounts.createDiscount')}
+          </Button>
+        )}
       </div>
 
       {/* Create/Edit Form */}

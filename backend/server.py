@@ -696,6 +696,22 @@ class AdvancedWhatsAppCampaignCreate(BaseModel):
     scheduled_at: Optional[str] = None
     payment_links: List[Dict[str, str]] = []
 
+class AdvancedWhatsAppCampaignUpdate(BaseModel):
+    title: Optional[str] = None
+    template_id: Optional[str] = None
+    message_content: Optional[str] = None
+    language: Optional[str] = None
+    buttons: Optional[List[InteractiveButton]] = None
+    list_sections: Optional[List[InteractiveSection]] = None
+    media_url: Optional[str] = None
+    media_type: Optional[str] = None
+    target_contacts: Optional[List[str]] = None
+    target_tags: Optional[List[str]] = None
+    target_status: Optional[str] = None
+    use_personalization: Optional[bool] = None
+    scheduled_at: Optional[str] = None
+    payment_links: Optional[List[Dict[str, str]]] = None
+
 class CampaignAnalytics(BaseModel):
     """Detailed analytics for campaigns"""
     model_config = ConfigDict(extra="ignore")
@@ -975,6 +991,19 @@ class GiftCardCreate(BaseModel):
     expires_at: datetime
     design_template: str = "default"
     design_color: str = "#8B5CF6"
+
+class GiftCardUpdate(BaseModel):
+    amount: Optional[float] = None
+    currency: Optional[str] = None
+    recipient_name: Optional[str] = None
+    recipient_email: Optional[EmailStr] = None
+    personal_message: Optional[str] = None
+    sender_name: Optional[str] = None
+    sender_email: Optional[EmailStr] = None
+    expires_at: Optional[datetime] = None
+    design_template: Optional[str] = None
+    design_color: Optional[str] = None
+    status: Optional[str] = None
 
 class GiftCardRedeem(BaseModel):
     redeemed_by_name: str
@@ -3566,6 +3595,110 @@ async def create_advanced_campaign(
     
     return campaign
 
+@api_router.put("/whatsapp/advanced-campaigns/{campaign_id}", response_model=AdvancedWhatsAppCampaign)
+async def update_advanced_campaign(
+    campaign_id: str,
+    campaign_update: AdvancedWhatsAppCampaignUpdate,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Update an advanced WhatsApp campaign"""
+    # Verify campaign exists and belongs to user
+    campaign = await db.advanced_whatsapp_campaigns.find_one(
+        {"id": campaign_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    # Build update dictionary with only provided fields
+    update_data = {}
+    
+    if campaign_update.title is not None:
+        update_data["title"] = campaign_update.title
+    if campaign_update.template_id is not None:
+        update_data["template_id"] = campaign_update.template_id
+    if campaign_update.message_content is not None:
+        update_data["message_content"] = campaign_update.message_content
+    if campaign_update.language is not None:
+        update_data["language"] = campaign_update.language
+    if campaign_update.buttons is not None:
+        update_data["buttons"] = campaign_update.buttons
+    if campaign_update.list_sections is not None:
+        update_data["list_sections"] = campaign_update.list_sections
+    if campaign_update.media_url is not None:
+        update_data["media_url"] = campaign_update.media_url
+        update_data["has_media"] = bool(campaign_update.media_url)
+    if campaign_update.media_type is not None:
+        update_data["media_type"] = campaign_update.media_type
+    if campaign_update.target_contacts is not None:
+        update_data["target_contacts"] = campaign_update.target_contacts
+    if campaign_update.target_tags is not None:
+        update_data["target_tags"] = campaign_update.target_tags
+    if campaign_update.target_status is not None:
+        update_data["target_status"] = campaign_update.target_status
+    if campaign_update.use_personalization is not None:
+        update_data["use_personalization"] = campaign_update.use_personalization
+    if campaign_update.payment_links is not None:
+        update_data["payment_links"] = campaign_update.payment_links
+    
+    # Handle scheduled_at
+    if campaign_update.scheduled_at is not None:
+        scheduled_at = None
+        if campaign_update.scheduled_at:
+            try:
+                scheduled_at = datetime.fromisoformat(campaign_update.scheduled_at)
+            except:
+                pass
+        update_data["scheduled_at"] = scheduled_at.isoformat() if scheduled_at else None
+    
+    # Add updated_at timestamp
+    update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+    
+    # Update the campaign
+    await db.advanced_whatsapp_campaigns.update_one(
+        {"id": campaign_id, "user_id": current_user["id"]},
+        {"$set": update_data}
+    )
+    
+    # Fetch and return updated campaign
+    updated_campaign = await db.advanced_whatsapp_campaigns.find_one(
+        {"id": campaign_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    # Parse dates
+    for date_field in ['created_at', 'updated_at', 'scheduled_at', 'sent_at']:
+        if isinstance(updated_campaign.get(date_field), str):
+            updated_campaign[date_field] = datetime.fromisoformat(updated_campaign[date_field])
+    
+    return updated_campaign
+
+@api_router.delete("/whatsapp/advanced-campaigns/{campaign_id}")
+async def delete_advanced_campaign(
+    campaign_id: str,
+    current_user: Dict = Depends(get_current_user)
+):
+    """Delete an advanced WhatsApp campaign"""
+    # Verify campaign exists and belongs to user
+    campaign = await db.advanced_whatsapp_campaigns.find_one(
+        {"id": campaign_id, "user_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    # Delete the campaign
+    result = await db.advanced_whatsapp_campaigns.delete_one(
+        {"id": campaign_id, "user_id": current_user["id"]}
+    )
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    
+    return {"message": "Campaign deleted successfully"}
+
 @api_router.post("/whatsapp/advanced-campaigns/{campaign_id}/send")
 async def send_advanced_campaign(
     campaign_id: str,
@@ -5276,6 +5409,111 @@ async def get_gift_card_by_code(code: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching gift card: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/gift-cards/{card_id}", response_model=GiftCard)
+async def update_gift_card(
+    card_id: str,
+    gift_card_update: GiftCardUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    """Update a gift card"""
+    try:
+        # Verify gift card exists and belongs to user
+        gift_card = await db.gift_cards.find_one(
+            {"id": card_id, "sender_id": current_user["id"]},
+            {"_id": 0}
+        )
+        
+        if not gift_card:
+            raise HTTPException(status_code=404, detail="Gift card not found")
+        
+        # Build update dictionary with only provided fields
+        update_data = {}
+        
+        if gift_card_update.amount is not None:
+            update_data["amount"] = gift_card_update.amount
+        if gift_card_update.currency is not None:
+            update_data["currency"] = gift_card_update.currency
+        if gift_card_update.recipient_name is not None:
+            update_data["recipient_name"] = gift_card_update.recipient_name
+        if gift_card_update.recipient_email is not None:
+            update_data["recipient_email"] = gift_card_update.recipient_email
+        if gift_card_update.personal_message is not None:
+            update_data["personal_message"] = gift_card_update.personal_message
+        if gift_card_update.sender_name is not None:
+            update_data["sender_name"] = gift_card_update.sender_name
+        if gift_card_update.sender_email is not None:
+            update_data["sender_email"] = gift_card_update.sender_email
+        if gift_card_update.expires_at is not None:
+            # Pydantic should convert string to datetime, but ensure it's stored as ISO string
+            expires_at = gift_card_update.expires_at
+            if isinstance(expires_at, datetime):
+                update_data["expires_at"] = expires_at.isoformat()
+            else:
+                # If it's already a string, use it directly
+                update_data["expires_at"] = expires_at
+        if gift_card_update.design_template is not None:
+            update_data["design_template"] = gift_card_update.design_template
+        if gift_card_update.design_color is not None:
+            update_data["design_color"] = gift_card_update.design_color
+        if gift_card_update.status is not None:
+            update_data["status"] = gift_card_update.status
+        
+        # Update the gift card
+        await db.gift_cards.update_one(
+            {"id": card_id, "sender_id": current_user["id"]},
+            {"$set": update_data}
+        )
+        
+        # Fetch and return updated gift card
+        updated_card = await db.gift_cards.find_one(
+            {"id": card_id, "sender_id": current_user["id"]},
+            {"_id": 0}
+        )
+        
+        # Parse dates
+        if isinstance(updated_card.get('expires_at'), str):
+            updated_card['expires_at'] = datetime.fromisoformat(updated_card['expires_at'])
+        if isinstance(updated_card.get('created_at'), str):
+            updated_card['created_at'] = datetime.fromisoformat(updated_card['created_at'])
+        
+        return updated_card
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating gift card: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.delete("/gift-cards/{card_id}")
+async def delete_gift_card(
+    card_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a gift card"""
+    try:
+        # Verify gift card exists and belongs to user
+        gift_card = await db.gift_cards.find_one(
+            {"id": card_id, "sender_id": current_user["id"]},
+            {"_id": 0}
+        )
+        
+        if not gift_card:
+            raise HTTPException(status_code=404, detail="Gift card not found")
+        
+        # Delete the gift card
+        result = await db.gift_cards.delete_one(
+            {"id": card_id, "sender_id": current_user["id"]}
+        )
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Gift card not found")
+        
+        return {"message": "Gift card deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting gift card: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.patch("/gift-cards/{code}/redeem", response_model=GiftCard)

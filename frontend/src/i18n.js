@@ -687,7 +687,11 @@ const resources = {
         statusUsed: 'Utilisée',
         statusExpired: 'Expirée',
         statusCancelled: 'Annulée',
-        noCards: 'Aucune carte cadeau. Créez-en une pour commencer.'
+        noCards: 'Aucune carte cadeau. Créez-en une pour commencer.',
+        confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette carte cadeau ?',
+        cardDeleted: 'Carte cadeau supprimée',
+        cardDeletedDesc: 'La carte cadeau a été supprimée avec succès',
+        errorDeleting: 'Erreur lors de la suppression de la carte cadeau'
       },
       discounts: {
         title: 'Réductions Clients',
@@ -1588,7 +1592,11 @@ const resources = {
       },
       giftCards: {
         title: 'Gift Cards',
-        subtitle: 'Create and manage gift cards'
+        subtitle: 'Create and manage gift cards',
+        confirmDelete: 'Are you sure you want to delete this gift card?',
+        cardDeleted: 'Gift Card Deleted',
+        cardDeletedDesc: 'Gift card deleted successfully',
+        errorDeleting: 'Error deleting gift card'
       },
       discounts: {
         title: 'Discounts',
@@ -2537,7 +2545,11 @@ const resources = {
         statusUsed: 'Verwendet',
         statusExpired: 'Abgelaufen',
         statusCancelled: 'Storniert',
-        noCards: 'Keine Geschenkkarten. Erstellen Sie eine, um zu beginnen.'
+        noCards: 'Keine Geschenkkarten. Erstellen Sie eine, um zu beginnen.',
+        confirmDelete: 'Sind Sie sicher, dass Sie diese Geschenkkarte löschen möchten?',
+        cardDeleted: 'Geschenkkarte gelöscht',
+        cardDeletedDesc: 'Die Geschenkkarte wurde erfolgreich gelöscht',
+        errorDeleting: 'Fehler beim Löschen der Geschenkkarte'
       },
       discounts: {
         title: 'Kundenrabatte',

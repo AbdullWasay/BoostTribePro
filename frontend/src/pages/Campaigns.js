@@ -59,7 +59,13 @@ const Campaigns = () => {
       const response = await axios.get(`${API}/campaigns`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setCampaigns(response.data);
+      // Sort campaigns by created_at (most recent first)
+      const sortedCampaigns = [...response.data].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB - dateA; // Descending order (newest first)
+      });
+      setCampaigns(sortedCampaigns);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast.error(t('campaigns.errorLoading'));
@@ -249,7 +255,10 @@ const Campaigns = () => {
           <p className="text-gray-400">{t('campaigns.subtitle', { count: campaigns.length })}</p>
         </div>
         <Button
-          onClick={() => setShowCreateDialog(true)}
+          onClick={() => {
+            resetForm();
+            setShowCreateDialog(true);
+          }}
           className="bg-primary hover:bg-primary/90 glow"
           data-testid="create-campaign-button"
         >
@@ -357,7 +366,12 @@ const Campaigns = () => {
       )}
 
       {/* Create Campaign Dialog */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+      <Dialog open={showCreateDialog} onOpenChange={(open) => {
+        setShowCreateDialog(open);
+        if (!open) {
+          resetForm();
+        }
+      }}>
         <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="create-campaign-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
@@ -450,7 +464,12 @@ const Campaigns = () => {
       </Dialog>
 
       {/* Edit Campaign Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open);
+        if (!open) {
+          resetForm();
+        }
+      }}>
         <DialogContent className="glass max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="edit-campaign-dialog">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
