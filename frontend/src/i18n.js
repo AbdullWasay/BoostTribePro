@@ -953,7 +953,9 @@ const resources = {
         statusScheduled: 'Programmé',
         statusSending: 'Envoi...',
         statusSent: 'Envoyé',
-        statusFailed: 'Échoué'
+        statusFailed: 'Échoué',
+        save: 'Enregistrer',
+        editCampaign: 'Modifier la campagne'
       },
       common: {
         save: 'Enregistrer',
@@ -1867,7 +1869,9 @@ const resources = {
         statusScheduled: 'Scheduled',
         statusSending: 'Sending...',
         statusSent: 'Sent',
-        statusFailed: 'Failed'
+        statusFailed: 'Failed',
+        save: 'Save',
+        editCampaign: 'Edit Campaign'
       },
       common: {
         save: 'Save',
@@ -2807,7 +2811,9 @@ const resources = {
         statusScheduled: 'Geplant',
         statusSending: 'Wird gesendet...',
         statusSent: 'Gesendet',
-        statusFailed: 'Fehlgeschlagen'
+        statusFailed: 'Fehlgeschlagen',
+        save: 'Speichern',
+        editCampaign: 'Kampagne bearbeiten'
       },
       common: {
         save: 'Speichern',
