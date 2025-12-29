@@ -219,7 +219,13 @@ const Catalog = () => {
 
   const handleShareWhatsApp = (item) => {
     const url = `${window.location.origin}/p/${item.slug}`;
-    const text = `Découvrez : ${item.title}\n${item.description}\n\nPrix : ${item.price} ${item.currency}\n\nLien : ${url}`;
+    // Clean description - remove "none" or empty values
+    let description = item.description || '';
+    if (description.toLowerCase().trim() === 'none' || description.trim() === '') {
+      description = item.title;
+    }
+    // Only share the product page URL, not the YouTube URL
+    const text = `${item.title}\n${description}\n\nPrix : ${item.price} ${item.currency}\n\n${url}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(whatsappUrl, '_blank');
   };

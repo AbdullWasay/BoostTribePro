@@ -6768,7 +6768,10 @@ async def get_product_page_html(slug: str, request: Request):
         if youtube_match:
             # Extract YouTube video ID and use YouTube thumbnail
             video_id = youtube_match.group(1)
+            # Use maxresdefault for best quality (1280x720), fallback available
             product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+            # Log for debugging
+            logger.info(f"YouTube thumbnail extracted for product {slug}: {product_image}")
         # Check if it's a Vimeo URL
         elif 'vimeo.com' in image_url:
             vimeo_match = re.search(r'vimeo\.com\/(?:.*\/)?(\d+)', image_url)
@@ -6791,10 +6794,15 @@ async def get_product_page_html(slug: str, request: Request):
         product_image = f"{base_url}/logo512.png"
     
     # Build description with price if available
+    # Filter out "none" or empty descriptions
+    clean_description = product_description.strip() if product_description else ""
+    if clean_description.lower() in ['none', 'null', '']:
+        clean_description = product_title
+    
     if product_price:
-        full_description = f"{product_description} - {product_price} {product_currency}"
+        full_description = f"{clean_description} - {product_price} {product_currency}"
     else:
-        full_description = product_description or product_title
+        full_description = clean_description or product_title
     
     # Escape HTML special characters
     def escape_html(text):
@@ -6807,16 +6815,30 @@ async def get_product_page_html(slug: str, request: Request):
                 .replace('"', "&quot;")
                 .replace("'", "&#x27;"))
     
+    # Log the image URL for debugging
+    logger.info(f"Product page HTML for {slug}: image={product_image}, title={product_title}, description={full_description[:100]}")
+    
+    # Ensure image URL is valid and accessible
+    if not product_image or product_image == 'none' or product_image.lower() == 'null':
+        product_image = f"{base_url}/logo512.png"
+        logger.warning(f"Invalid image URL for {slug}, using default")
+    
+    # Final validation - ensure image URL is absolute and valid
+    if not product_image.startswith('http://') and not product_image.startswith('https://'):
+        product_image = f"{base_url}/logo512.png"
+        logger.warning(f"Image URL not absolute for {slug}, using default: {product_image}")
+    
     # Create HTML with proper OG meta tags for WhatsApp/Facebook
+    # Note: WhatsApp crawler reads meta tags, so we include them before redirect
     html_content = f"""<!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" prefix="og: https://ogp.me/ns#">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{escape_html(product_title)}</title>
     <meta name="description" content="{escape_html(full_description)}">
     
-    <!-- Open Graph / Facebook / WhatsApp -->
+    <!-- Open Graph / Facebook / WhatsApp - These are critical for link previews -->
     <meta property="og:type" content="product">
     <meta property="og:title" content="{escape_html(product_title)}">
     <meta property="og:description" content="{escape_html(full_description)}">
@@ -6824,8 +6846,8 @@ async def get_product_page_html(slug: str, request: Request):
     <meta property="og:image:url" content="{escape_html(product_image)}">
     <meta property="og:image:secure_url" content="{escape_html(product_image)}">
     <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="720">
     <meta property="og:url" content="{escape_html(product_url)}">
     <meta property="og:site_name" content="BoostTribe">
     <meta property="og:locale" content="fr_FR">
@@ -6836,18 +6858,30 @@ async def get_product_page_html(slug: str, request: Request):
     <meta name="twitter:description" content="{escape_html(full_description)}">
     <meta name="twitter:image" content="{escape_html(product_image)}">
     
+    <!-- Additional meta for better WhatsApp support -->
+    <meta name="robots" content="index, follow">
+    
     <!-- Redirect to React app (with delay to allow crawlers to read meta tags) -->
     <script>
         // Delay redirect to allow crawlers to read meta tags
+        // Crawlers typically read the first 100KB, so meta tags are read before redirect
         setTimeout(function() {{
-            window.location.href = '/p/{slug}';
-        }}, 100);
+            if (window.location.hash !== '#no-redirect') {{
+                window.location.href = '/p/{slug}';
+            }}
+        }}, 500);
     </script>
     <noscript>
-        <meta http-equiv="refresh" content="1; url=/p/{slug}">
+        <meta http-equiv="refresh" content="2; url=/p/{slug}">
     </noscript>
 </head>
 <body>
+    <!-- Visible content for crawlers -->
+    <div style="display: none;">
+        <h1>{escape_html(product_title)}</h1>
+        <p>{escape_html(full_description)}</p>
+        <img src="{escape_html(product_image)}" alt="{escape_html(product_title)}" />
+    </div>
     <p>Redirecting to product page... <a href="/p/{slug}">Click here</a></p>
 </body>
 </html>"""
