@@ -6755,21 +6755,39 @@ async def get_product_page_html(slug: str, request: Request):
     product_price = item.get('price', 0)
     product_currency = item.get('currency', 'CHF')
     
-    # Build product URL
+    # Build product URL (ensure it's absolute)
     base_url = str(request.base_url).rstrip('/')
     product_url = f"{base_url}/p/{slug}"
     
-    # Check if image_url is a YouTube URL and extract thumbnail
-    youtube_match = None
+    # Process image URL - ensure it's absolute and handle different types
     if product_image:
-        youtube_match = re.search(r'(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)', product_image)
-    
-    if youtube_match:
-        # Extract YouTube video ID and use YouTube thumbnail
-        video_id = youtube_match.group(1)
-        product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
-    elif not product_image:
-        # If no image, use a default or empty
+        image_url = product_image.strip()
+        
+        # Check if it's a YouTube URL and extract thumbnail
+        youtube_match = re.search(r'(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)', image_url)
+        if youtube_match:
+            # Extract YouTube video ID and use YouTube thumbnail
+            video_id = youtube_match.group(1)
+            product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+        # Check if it's a Vimeo URL
+        elif 'vimeo.com' in image_url:
+            vimeo_match = re.search(r'vimeo\.com\/(?:.*\/)?(\d+)', image_url)
+            if vimeo_match:
+                # Vimeo requires API for thumbnails, use fallback
+                product_image = f"{base_url}/logo512.png"
+            else:
+                product_image = f"{base_url}/logo512.png"
+        # If it's a relative URL, make it absolute
+        elif image_url.startswith('/'):
+            product_image = f"{base_url}{image_url}"
+        # If it's already absolute (http/https), use it as is
+        elif image_url.startswith('http://') or image_url.startswith('https://'):
+            product_image = image_url
+        # Otherwise, treat as relative and make absolute
+        else:
+            product_image = f"{base_url}/{image_url}"
+    else:
+        # If no image, use default
         product_image = f"{base_url}/logo512.png"
     
     # Build description with price if available
@@ -6789,7 +6807,7 @@ async def get_product_page_html(slug: str, request: Request):
                 .replace('"', "&quot;")
                 .replace("'", "&#x27;"))
     
-    # Create HTML with proper OG meta tags (no platform branding)
+    # Create HTML with proper OG meta tags for WhatsApp/Facebook
     html_content = f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -6798,13 +6816,19 @@ async def get_product_page_html(slug: str, request: Request):
     <title>{escape_html(product_title)}</title>
     <meta name="description" content="{escape_html(full_description)}">
     
-    <!-- Open Graph / Facebook -->
+    <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="product">
     <meta property="og:title" content="{escape_html(product_title)}">
     <meta property="og:description" content="{escape_html(full_description)}">
     <meta property="og:image" content="{escape_html(product_image)}">
+    <meta property="og:image:url" content="{escape_html(product_image)}">
+    <meta property="og:image:secure_url" content="{escape_html(product_image)}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:url" content="{escape_html(product_url)}">
-    <meta property="og:site_name" content="">
+    <meta property="og:site_name" content="BoostTribe">
+    <meta property="og:locale" content="fr_FR">
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
@@ -6812,12 +6836,15 @@ async def get_product_page_html(slug: str, request: Request):
     <meta name="twitter:description" content="{escape_html(full_description)}">
     <meta name="twitter:image" content="{escape_html(product_image)}">
     
-    <!-- Redirect to React app -->
+    <!-- Redirect to React app (with delay to allow crawlers to read meta tags) -->
     <script>
-        window.location.href = '/p/{slug}';
+        // Delay redirect to allow crawlers to read meta tags
+        setTimeout(function() {{
+            window.location.href = '/p/{slug}';
+        }}, 100);
     </script>
     <noscript>
-        <meta http-equiv="refresh" content="0; url=/p/{slug}">
+        <meta http-equiv="refresh" content="1; url=/p/{slug}">
     </noscript>
 </head>
 <body>

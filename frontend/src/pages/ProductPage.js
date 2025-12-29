@@ -18,48 +18,85 @@ const ProductPage = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    fetchProduct();
-  }, [slug]);
+  // Helper function to update or create meta tags (defined outside useEffect for reuse)
+  const updateMetaTag = (property, content, isName = false) => {
+    const selector = isName ? `meta[name="${property}"]` : `meta[property="${property}"]`;
+    let meta = document.querySelector(selector);
+    if (!meta) {
+      meta = document.createElement('meta');
+      if (isName) {
+        meta.setAttribute('name', property);
+      } else {
+        meta.setAttribute('property', property);
+      }
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', content);
+  };
 
-  // Update meta tags for Open Graph (WhatsApp/Facebook link previews)
+  // Function to extract image URL from product data
+  const getProductImageUrl = (imageUrl) => {
+    if (!imageUrl) {
+      return `${window.location.origin}/logo512.png`;
+    }
+
+    const url = imageUrl.trim();
+    
+    // Check if it's a YouTube URL and extract thumbnail
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)/);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      // Use maxresdefault for best quality, fallback to hqdefault
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    } 
+    // Check if it's a Vimeo URL
+    else if (url.includes('vimeo.com')) {
+      const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+      if (vimeoMatch) {
+        // Vimeo thumbnail requires API, use fallback
+        return `${window.location.origin}/logo512.png`;
+      }
+    }
+    // If it's a relative URL, make it absolute
+    else if (url.startsWith('/')) {
+      return `${window.location.origin}${url}`;
+    }
+    // If it's already absolute, use it as is
+    else if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // Otherwise, make it absolute
+    else {
+      return `${window.location.origin}/${url}`;
+    }
+    
+    return `${window.location.origin}/logo512.png`;
+  };
+
+  // Update meta tags immediately when product data is available
   useEffect(() => {
     if (product) {
       const productUrl = window.location.href;
-      let productImage = product.image_url || `${window.location.origin}/logo512.png`;
-      
-      // Check if image_url is a YouTube URL and extract thumbnail
-      if (product.image_url) {
-        const youtubeMatch = product.image_url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
-        if (youtubeMatch) {
-          const videoId = youtubeMatch[1];
-          productImage = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-        }
-      }
-      
-      const productTitle = product.title;
+      const productImage = getProductImageUrl(product.image_url);
+      const productTitle = product.title || 'Product';
       const productDescription = product.description || `${product.title} - ${product.price} ${product.currency}`;
-      
-      // Update or create OG meta tags
-      const updateMetaTag = (property, content) => {
-        let meta = document.querySelector(`meta[property="${property}"]`);
-        if (!meta) {
-          meta = document.createElement('meta');
-          meta.setAttribute('property', property);
-          document.head.appendChild(meta);
-        }
-        meta.setAttribute('content', content);
-      };
 
       // Update title
       document.title = productTitle;
 
-      // Update OG tags
+      // Update Open Graph tags (WhatsApp uses these)
       updateMetaTag('og:title', productTitle);
       updateMetaTag('og:description', productDescription);
       updateMetaTag('og:image', productImage);
+      updateMetaTag('og:image:url', productImage);
+      updateMetaTag('og:image:secure_url', productImage);
+      updateMetaTag('og:image:type', 'image/jpeg');
+      updateMetaTag('og:image:width', '1200');
+      updateMetaTag('og:image:height', '630');
       updateMetaTag('og:url', productUrl);
       updateMetaTag('og:type', 'product');
+      updateMetaTag('og:site_name', 'BoostTribe');
+      updateMetaTag('og:locale', 'fr_FR');
 
       // Update Twitter card tags
       updateMetaTag('twitter:card', 'summary_large_image');
@@ -68,13 +105,14 @@ const ProductPage = () => {
       updateMetaTag('twitter:image', productImage);
 
       // Update description meta tag
-      let descMeta = document.querySelector('meta[name="description"]');
-      if (!descMeta) {
-        descMeta = document.createElement('meta');
-        descMeta.setAttribute('name', 'description');
-        document.head.appendChild(descMeta);
-      }
-      descMeta.setAttribute('content', productDescription);
+      updateMetaTag('description', productDescription, true);
+
+      // Log for debugging (remove in production)
+      console.log('Meta tags updated:', {
+        title: productTitle,
+        image: productImage,
+        url: productUrl
+      });
     }
 
     // Cleanup: restore default meta tags when component unmounts
@@ -86,6 +124,10 @@ const ProductPage = () => {
       }
     };
   }, [product]);
+
+  useEffect(() => {
+    fetchProduct();
+  }, [slug]);
 
   const fetchProduct = async () => {
     try {
