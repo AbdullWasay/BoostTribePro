@@ -11,54 +11,78 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get backend URL from environment
-    const backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8001';
+    // Get backend URL from environment - ensure it doesn't have trailing slash
+    let backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8001';
+    backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
     
-    // Fetch product data from backend
-    const response = await fetch(`${backendUrl}/api/catalog/public/${slug}`);
+    // Build API URL
+    const apiUrl = `${backendUrl}/api/catalog/public/${slug}`;
+    
+    console.log(`[Product Preview] Fetching from: ${apiUrl}`);
+    
+    // Fetch product data from backend with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    const response = await fetch(apiUrl, {
+      signal: controller.signal,
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'BoostTribe-Preview-Bot/1.0'
+      }
+    });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
+      console.error(`[Product Preview] Backend returned ${response.status} for ${slug}`);
       return res.status(404).send('Product not found');
     }
 
     const product = await response.json();
+    console.log(`[Product Preview] Product loaded: ${product.title}, image_url: ${product.image_url || 'none'}`);
 
     // Extract image URL and handle YouTube videos
-    let productImage = product.image_url || `${req.headers.host ? `https://${req.headers.host}` : ''}/logo512.png`;
+    const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+    let productImage = `${baseUrl}/logo512.png`; // Default fallback
     
     if (product.image_url) {
-      const imageUrl = product.image_url.trim();
+      const imageUrl = String(product.image_url).trim();
+      console.log(`[Product Preview] Processing image URL: ${imageUrl}`);
       
       // Check if it's a YouTube URL and extract thumbnail
       const youtubeMatch = imageUrl.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)/);
       if (youtubeMatch) {
         const videoId = youtubeMatch[1];
         productImage = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+        console.log(`[Product Preview] YouTube thumbnail extracted: ${productImage}`);
       }
       // Check if it's a Vimeo URL
       else if (imageUrl.includes('vimeo.com')) {
         // Vimeo requires API, use fallback
-        const baseUrl = req.headers.host ? `https://${req.headers.host}` : '';
         productImage = `${baseUrl}/logo512.png`;
+        console.log(`[Product Preview] Vimeo URL detected, using fallback`);
       }
       // If it's a relative URL, make it absolute
       else if (imageUrl.startsWith('/')) {
-        const baseUrl = req.headers.host ? `https://${req.headers.host}` : '';
         productImage = `${baseUrl}${imageUrl}`;
+        console.log(`[Product Preview] Relative URL converted: ${productImage}`);
       }
       // If it's already absolute, use it as is
       else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
         productImage = imageUrl;
+        console.log(`[Product Preview] Absolute URL used: ${productImage}`);
       }
       // Otherwise, make it absolute
       else {
-        const baseUrl = req.headers.host ? `https://${req.headers.host}` : '';
         productImage = `${baseUrl}/${imageUrl}`;
+        console.log(`[Product Preview] Made absolute: ${productImage}`);
       }
     } else {
-      const baseUrl = req.headers.host ? `https://${req.headers.host}` : '';
-      productImage = `${baseUrl}/logo512.png`;
+      console.log(`[Product Preview] No image_url, using default: ${productImage}`);
     }
+    
+    console.log(`[Product Preview] Final image URL: ${productImage}`);
 
     // Clean description - remove "none" or empty values
     let description = product.description || '';
@@ -72,9 +96,7 @@ export default async function handler(req, res) {
       : description || product.title;
 
     // Build product URL
-    const productUrl = req.headers.host 
-      ? `https://${req.headers.host}/p/${slug}`
-      : `https://boost-tribe-pro.vercel.app/p/${slug}`;
+    const productUrl = `${baseUrl}/p/${slug}`;
 
     // Escape HTML
     const escapeHtml = (text) => {
@@ -88,6 +110,7 @@ export default async function handler(req, res) {
     };
 
     // Generate HTML with proper OG meta tags
+    // IMPORTANT: Meta tags must be in the <head> and before any redirect
     const html = `<!DOCTYPE html>
 <html lang="fr" prefix="og: https://ogp.me/ns#">
 <head>
@@ -119,26 +142,37 @@ export default async function handler(req, res) {
     <!-- Additional meta for better WhatsApp support -->
     <meta name="robots" content="index, follow">
     
+    <!-- Visible content for crawlers (some crawlers read body content) -->
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .product-preview { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; }
+        .product-image { width: 100%; max-width: 500px; height: auto; border-radius: 4px; }
+    </style>
+    
     <!-- Redirect to React app (with delay to allow crawlers to read meta tags) -->
     <script>
-        setTimeout(function() {
-            if (window.location.hash !== '#no-redirect') {
-                window.location.href = '/p/${slug}';
-            }
-        }, 500);
+        // Only redirect if not a bot/crawler
+        const isBot = /bot|crawler|spider|crawling|facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot/i.test(navigator.userAgent);
+        if (!isBot) {
+            setTimeout(function() {
+                if (window.location.hash !== '#no-redirect') {
+                    window.location.href = '/p/${slug}';
+                }
+            }, 1000);
+        }
     </script>
     <noscript>
-        <meta http-equiv="refresh" content="2; url=/p/${slug}">
+        <meta http-equiv="refresh" content="3; url=/p/${slug}">
     </noscript>
 </head>
 <body>
-    <!-- Visible content for crawlers -->
-    <div style="display: none;">
+    <!-- Visible content for crawlers and users -->
+    <div class="product-preview">
         <h1>${escapeHtml(product.title)}</h1>
         <p>${escapeHtml(fullDescription)}</p>
-        <img src="${escapeHtml(productImage)}" alt="${escapeHtml(product.title)}" />
+        <img src="${escapeHtml(productImage)}" alt="${escapeHtml(product.title)}" class="product-image" />
+        <p><a href="/p/${slug}">View Product →</a></p>
     </div>
-    <p>Redirecting to product page... <a href="/p/${slug}">Click here</a></p>
 </body>
 </html>`;
 
@@ -146,10 +180,31 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
     
+    console.log(`[Product Preview] HTML generated successfully for ${slug}`);
     return res.status(200).send(html);
   } catch (error) {
-    console.error('Error generating product page HTML:', error);
-    return res.status(500).send('Error loading product');
+    console.error('[Product Preview] Error:', error.message);
+    console.error('[Product Preview] Stack:', error.stack);
+    
+    // Return a basic HTML page with default meta tags so WhatsApp can see something
+    const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+    const errorHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product</title>
+    <meta property="og:title" content="Product">
+    <meta property="og:description" content="Product page">
+    <meta property="og:image" content="${baseUrl}/logo512.png">
+    <meta property="og:url" content="${baseUrl}/p/${slug}">
+    <meta property="og:type" content="product">
+</head>
+<body>
+    <p>Error loading product. Please try again later.</p>
+</body>
+</html>`;
+    return res.status(500).send(errorHtml);
   }
 }
 
