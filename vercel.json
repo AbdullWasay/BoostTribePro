@@ -2,12 +2,33 @@
   "rewrites": [
     {
       "source": "/p/:slug",
+      "destination": "/api/p/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype).*"
+        }
+      ]
+    },
+    {
+      "source": "/p/:slug",
+      "destination": "/api/p/:slug",
+      "has": [
+        {
+          "type": "query",
+          "key": "_escaped_fragment_"
+        }
+      ]
+    },
+    {
+      "source": "/p/:slug",
       "destination": "/api/p/:slug"
     }
   ],
   "headers": [
     {
-      "source": "/p/:slug",
+      "source": "/api/p/:slug",
       "headers": [
         {
           "key": "Content-Type",
@@ -16,6 +37,10 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=3600, s-maxage=3600"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
         }
       ]
     }

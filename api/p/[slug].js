@@ -4,13 +4,23 @@
  */
 
 export default async function handler(req, res) {
-  const { slug } = req.query;
-
-  if (!slug) {
-    return res.status(404).send('Product not found');
-  }
-
+  // Ensure we always return a response
   try {
+    const { slug } = req.query;
+
+    if (!slug) {
+      const errorHtml = `<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Product not found - No slug provided</h1></body></html>`;
+      return res.status(404).send(errorHtml);
+    }
+
+    // Detect if this is a crawler/bot
+    const userAgent = req.headers['user-agent'] || '';
+    const isBot = /bot|crawler|spider|crawling|facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype/i.test(userAgent);
+    
+    console.log(`[Product Preview] Request from: ${userAgent.substring(0, 100)}`);
+    console.log(`[Product Preview] Is bot: ${isBot}`);
+    console.log(`[Product Preview] Slug: ${slug}`);
+
     // Get backend URL from environment - ensure it doesn't have trailing slash
     let backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8001';
     backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
@@ -35,8 +45,28 @@ export default async function handler(req, res) {
     clearTimeout(timeoutId);
     
     if (!response.ok) {
-      console.error(`[Product Preview] Backend returned ${response.status} for ${slug}`);
-      return res.status(404).send('Product not found');
+      const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`[Product Preview] Backend returned ${response.status} for ${slug}: ${errorText}`);
+      
+      // Return error HTML instead of plain text
+      const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+      const errorHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Not Found</title>
+    <meta property="og:title" content="Product Not Found">
+    <meta property="og:description" content="The requested product could not be found">
+    <meta property="og:image" content="${baseUrl}/logo512.png">
+</head>
+<body>
+    <h1>Product Not Found</h1>
+    <p>Backend returned status ${response.status}</p>
+    <p>API URL: ${apiUrl}</p>
+    <p>Error: ${errorText}</p>
+</body>
+</html>`;
+      return res.status(404).send(errorHtml);
     }
 
     const product = await response.json();
@@ -109,6 +139,18 @@ export default async function handler(req, res) {
         .replace(/'/g, '&#x27;');
     };
 
+    // Generate redirect script (only for browsers, not crawlers)
+    const redirectScript = isBot ? '<!-- Crawler detected - no redirect needed -->' : `<script>
+        setTimeout(function() {
+            if (window.location.hash !== '#no-redirect') {
+                window.location.href = '/p/${slug}';
+            }
+        }, 1000);
+    </script>
+    <noscript>
+        <meta http-equiv="refresh" content="3; url=/p/${slug}">
+    </noscript>`;
+
     // Generate HTML with proper OG meta tags
     // IMPORTANT: Meta tags must be in the <head> and before any redirect
     const html = `<!DOCTYPE html>
@@ -149,21 +191,8 @@ export default async function handler(req, res) {
         .product-image { width: 100%; max-width: 500px; height: auto; border-radius: 4px; }
     </style>
     
-    <!-- Redirect to React app (with delay to allow crawlers to read meta tags) -->
-    <script>
-        // Only redirect if not a bot/crawler
-        const isBot = /bot|crawler|spider|crawling|facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot/i.test(navigator.userAgent);
-        if (!isBot) {
-            setTimeout(function() {
-                if (window.location.hash !== '#no-redirect') {
-                    window.location.href = '/p/${slug}';
-                }
-            }, 1000);
-        }
-    </script>
-    <noscript>
-        <meta http-equiv="refresh" content="3; url=/p/${slug}">
-    </noscript>
+    <!-- Redirect to React app (only for regular browsers, not crawlers) -->
+    ${redirectScript}
 </head>
 <body>
     <!-- Visible content for crawlers and users -->
@@ -188,6 +217,7 @@ export default async function handler(req, res) {
     
     // Return a basic HTML page with default meta tags so WhatsApp can see something
     const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+    const slug = req.query?.slug || 'unknown';
     const errorHtml = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -201,7 +231,9 @@ export default async function handler(req, res) {
     <meta property="og:type" content="product">
 </head>
 <body>
-    <p>Error loading product. Please try again later.</p>
+    <h1>Error loading product</h1>
+    <p>Error: ${error.message}</p>
+    <p>Please try again later.</p>
 </body>
 </html>`;
     return res.status(500).send(errorHtml);
