@@ -77,10 +77,10 @@ const InstallPrompt = () => {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-white mb-1">
-                Installer BoostTribe
+                <span>Installer BoostTribe</span>
               </h3>
               <p className="text-sm text-gray-300 mb-3">
-                Ajoutez BoostTribe à votre écran d'accueil pour un accès rapide et une expérience améliorée.
+                <span>Ajoutez BoostTribe à votre écran d'accueil pour un accès rapide et une expérience améliorée.</span>
               </p>
               <div className="flex gap-2">
                 <Button
@@ -89,7 +89,7 @@ const InstallPrompt = () => {
                   className="flex-1"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Installer
+                  <span>Installer</span>
                 </Button>
                 <Button
                   size="sm"

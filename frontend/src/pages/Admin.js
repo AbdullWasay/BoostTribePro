@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
-import { Settings, Key, Save, MessageCircle, CreditCard, Building2 } from 'lucide-react';
+import { Settings, Key, Save, MessageCircle, CreditCard, Building2, Users } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import UserManagement from '@/components/UserManagement';
+import AdminPlans from './AdminPlans';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +17,7 @@ const API = `${BACKEND_URL}/api`;
 
 const Admin = () => {
   const { t } = useTranslation();
+  const { token, isSuperAdmin } = useAuth();
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,12 +38,16 @@ const Admin = () => {
   });
 
   useEffect(() => {
-    fetchSettings();
-  }, []);
+    if (token) {
+      fetchSettings();
+    }
+  }, [token]);
 
   const fetchSettings = async () => {
     try {
-      const response = await axios.get(`${API}/settings`);
+      const response = await axios.get(`${API}/settings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setSettings(response.data);
       setFormData({
         openai_api_key: response.data.openai_api_key || '',
@@ -67,7 +75,9 @@ const Admin = () => {
   const handleSaveSettings = async () => {
     setSaving(true);
     try {
-      await axios.put(`${API}/settings`, formData);
+      await axios.put(`${API}/settings`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       toast.success(t('admin.saved'));
       fetchSettings();
     } catch (error) {
@@ -90,41 +100,46 @@ const Admin = () => {
     <div className="space-y-6" data-testid="admin-page">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold mb-2" data-testid="admin-title">{t('admin.title')}</h1>
-          <p className="text-gray-400">{t('admin.subtitle')}</p>
+          <h1 className="text-4xl font-bold mb-2" data-testid="admin-title"><span>{t('admin.title')}</span></h1>
+          <p className="text-gray-400"><span>{t('admin.subtitle')}</span></p>
         </div>
-        <Button
-          onClick={() => window.location.href = '/admin/pricing-plans'}
-          className="bg-primary hover:bg-primary/90"
-          data-testid="manage-pricing-button"
-        >
-          <CreditCard className="mr-2 h-4 w-4" />
-          {t('admin.managePricing')}
-        </Button>
+
       </div>
 
       <Tabs defaultValue="api" className="space-y-6">
-        <TabsList className="glass border border-primary/20" data-testid="admin-tabs">
+        <TabsList className="glass border border-primary/20 flex flex-wrap h-auto gap-1 p-1" data-testid="admin-tabs">
           <TabsTrigger value="api" className="data-[state=active]:bg-primary" data-testid="tab-api">
             <Key className="mr-2 h-4 w-4" />
-            {t('admin.tabs.api')}
+            <span>{t('admin.tabs.api')}</span>
           </TabsTrigger>
           <TabsTrigger value="whatsapp" className="data-[state=active]:bg-primary" data-testid="tab-whatsapp">
             <MessageCircle className="mr-2 h-4 w-4" />
-            {t('admin.tabs.whatsapp')}
+            <span>{t('admin.tabs.whatsapp')}</span>
           </TabsTrigger>
           <TabsTrigger value="stripe" className="data-[state=active]:bg-primary" data-testid="tab-stripe">
             <CreditCard className="mr-2 h-4 w-4" />
-            {t('admin.tabs.stripe')}
+            <span>{t('admin.tabs.stripe')}</span>
           </TabsTrigger>
           <TabsTrigger value="company" className="data-[state=active]:bg-primary" data-testid="tab-company">
             <Building2 className="mr-2 h-4 w-4" />
-            {t('admin.tabs.company')}
+            <span>{t('admin.tabs.company')}</span>
           </TabsTrigger>
           <TabsTrigger value="settings" className="data-[state=active]:bg-primary" data-testid="tab-settings">
             <Settings className="mr-2 h-4 w-4" />
-            {t('admin.tabs.settings')}
+            <span>{t('admin.tabs.settings')}</span>
           </TabsTrigger>
+          {isSuperAdmin() && (
+            <TabsTrigger value="users" className="data-[state=active]:bg-primary" data-testid="tab-users">
+              <Users className="mr-2 h-4 w-4" />
+              <span>{t('superadmin.users.title')}</span>
+            </TabsTrigger>
+          )}
+          {isSuperAdmin() && (
+            <TabsTrigger value="plans" className="data-[state=active]:bg-primary" data-testid="tab-plans">
+              <CreditCard className="mr-2 h-4 w-4" />
+              <span>{t('superadmin.plans.title')}</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* AI Keys Tab */}
@@ -454,6 +469,38 @@ const Admin = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {isSuperAdmin() && (
+          <TabsContent value="users">
+            <Card className="glass border-primary/20">
+              <CardHeader>
+                <CardTitle>{t('superadmin.users.title')}</CardTitle>
+                <CardDescription>
+                  {t('superadmin.users.subtitle')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <UserManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {isSuperAdmin() && (
+          <TabsContent value="plans">
+            <Card className="glass border-primary/20">
+              <CardHeader>
+                <CardTitle>{t('superadmin.plans.title')}</CardTitle>
+                <CardDescription>
+                  {t('superadmin.plans.subtitle')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AdminPlans />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Save Button */}
@@ -470,7 +517,7 @@ const Admin = () => {
           ) : (
             <>
               <Save className="mr-2 h-5 w-5" />
-              {t('admin.save')}
+              <span>{t('admin.save')}</span>
             </>
           )}
         </Button>

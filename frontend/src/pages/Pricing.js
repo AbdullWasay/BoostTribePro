@@ -1,24 +1,49 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Check, Sparkles } from 'lucide-react';
+import { Check, Sparkles, Loader2, ArrowLeft } from 'lucide-react';
+import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const Pricing = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const response = await axios.get(`${API}/pricing-plans`);
+        setPlans(response.data.filter(p => p.active));
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const handleSubscribe = (planName) => {
-    toast.success(`Intérêt pour ${planName} enregistré ! Contactez-nous pour finaliser.`);
+    navigate('/register');
   };
 
-  const descriptions = {
-    fr: ['Pour découvrir la plateforme', 'Pour les coachs et formateurs', 'Pour les entreprises'],
-    en: ['To discover the platform', 'For coaches and trainers', 'For businesses'],
-    de: ['Um die Plattform zu entdecken', 'Für Trainer und Coaches', 'Für Unternehmen']
+  const getLocalizedPlan = (plan) => {
+    const lang = i18n.language || 'fr';
+    return {
+      ...plan,
+      name: (lang === 'en' ? plan.name_en : lang === 'de' ? plan.name_de : plan.name) || plan.name || '',
+      description: (lang === 'en' ? plan.description_en : lang === 'de' ? plan.description_de : plan.description_fr) || plan.description_fr || '',
+      features: (lang === 'en' ? plan.features_en : lang === 'de' ? plan.features_de : plan.features_fr) || plan.features_fr || [],
+      priceDisplay: plan.price === 0 ? t('catalog.free') : `${plan.price} ${plan.currency || 'CHF'}`,
+      cta: (lang === 'en' ? plan.cta_en : lang === 'de' ? plan.cta_de : plan.cta_fr) || (plan.price === 0 ? t('pricing.tryNow') : t('pricing.subscribe'))
+    };
   };
 
   const subtitle = {
@@ -55,7 +80,7 @@ const Pricing = () => {
       },
       {
         q: 'Puis-je importer mes contacts existants ?',
-        a: 'Oui, vous pouvez importer vos contacts via fichiers CSV ou Excel. Le système détecte automatiquement les doublons.'
+        a: 'Oui, vous pouvez imposer vos contacts via fichiers CSV ou Excel. Le système détecte automatiquement les doublons.'
       }
     ],
     en: [
@@ -117,46 +142,37 @@ const Pricing = () => {
     }
   };
 
-  const plans = [
-    {
-      name: t('pricing.starter.name'),
-      price: t('pricing.starter.price'),
-      description: descriptions[i18n.language]?.[0] || descriptions.fr[0],
-      features: t('pricing.starter.features', { returnObjects: true }),
-      cta: t('pricing.tryNow'),
-      highlighted: false,
-      testid: 'plan-starter'
-    },
-    {
-      name: t('pricing.pro.name'),
-      price: t('pricing.pro.price'),
-      description: descriptions[i18n.language]?.[1] || descriptions.fr[1],
-      features: t('pricing.pro.features', { returnObjects: true }),
-      cta: t('pricing.subscribe'),
-      highlighted: true,
-      testid: 'plan-pro'
-    },
-    {
-      name: t('pricing.business.name'),
-      price: t('pricing.business.price'),
-      description: descriptions[i18n.language]?.[2] || descriptions.fr[2],
-      features: t('pricing.business.features', { returnObjects: true }),
-      cta: t('pricing.subscribe'),
-      highlighted: false,
-      testid: 'plan-business'
-    },
-  ];
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+        <p className="text-xl text-gray-400 animate-pulse">{t('superadmin.plans.loading')}</p>
+      </div>
+    );
+  }
 
   const currentFaqs = faqs[i18n.language] || faqs.fr;
   const currentCta = ctaSection[i18n.language] || ctaSection.fr;
 
   return (
     <div className="space-y-12 pb-12" data-testid="pricing-page">
+      {/* Back Button */}
+      <div className="mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/')}
+          className="text-gray-400 hover:text-primary hover:bg-primary/10"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          {t('common.backToHome', { defaultValue: 'Retour à l\'accueil' })}
+        </Button>
+      </div>
+
       {/* Header */}
       <div className="text-center space-y-4">
         <Badge className="bg-primary/20 text-primary border-primary/30 mb-4">
           <Sparkles className="mr-1 h-3 w-3" />
-          Tarifs BoostTribe
+          <span>Tarifs BoostTribe</span>
         </Badge>
         <h1 className="text-5xl font-bold mb-4" data-testid="pricing-title">
           {t('pricing.title')}
@@ -168,74 +184,75 @@ const Pricing = () => {
 
       {/* Pricing Cards */}
       <div className="grid gap-8 lg:grid-cols-3 max-w-7xl mx-auto">
-        {plans.map((plan, index) => (
-          <Card
-            key={index}
-            className={
-              `glass relative transition-all duration-300 ${
-                plan.highlighted
+        {plans.map((plan, index) => {
+          const lp = getLocalizedPlan(plan);
+          return (
+            <Card
+              key={plan.id || index}
+              className={
+                `glass relative transition-all duration-300 ${lp.highlighted
                   ? 'border-primary glow scale-105 lg:scale-110'
                   : 'border-primary/20 hover:border-primary/40'
-              }`
-            }
-            data-testid={plan.testid}
-          >
-            {plan.highlighted && (
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-white px-4 py-1">
-                  {recommendedText[i18n.language] || recommendedText.fr}
-                </Badge>
-              </div>
-            )}
-            
-            <CardHeader className="text-center pb-8 pt-8">
-              <CardTitle className="text-2xl mb-2">{plan.name}</CardTitle>
-              <CardDescription className="text-gray-400 mb-4">
-                {plan.description}
-              </CardDescription>
-              <div className="mt-4">
-                <span className="text-5xl font-bold text-gradient">
-                  {plan.price.split('/')[0]}
-                </span>
-                {plan.price.includes('/') && (
-                  <span className="text-gray-400 text-lg">/{plan.price.split('/')[1]}</span>
-                )}
-              </div>
-            </CardHeader>
+                }`
+              }
+              data-testid={`plan-${index}`}
+            >
+              {lp.highlighted && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <Badge className="bg-primary text-white px-4 py-1">
+                    {recommendedText[i18n.language] || recommendedText.fr}
+                  </Badge>
+                </div>
+              )}
 
-            <CardContent className="space-y-4 pb-8">
-              <ul className="space-y-3">
-                {plan.features.map((feature, featureIndex) => (
-                  <li
-                    key={featureIndex}
-                    className="flex items-start gap-3"
-                    data-testid={`${plan.testid}-feature-${featureIndex}`}
-                  >
-                    <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <span className="text-gray-300">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
+              <CardHeader className="text-center pb-8 pt-8">
+                <CardTitle className="text-2xl mb-2">{lp.name}</CardTitle>
+                <CardDescription className="text-gray-400 mb-4">
+                  {lp.description}
+                </CardDescription>
+                <div className="mt-4">
+                  <span className="text-5xl font-bold text-gradient">
+                    {lp.priceDisplay}
+                  </span>
+                  {lp.price > 0 && (
+                    <span className="text-gray-400 text-lg"><span>/</span>{t('pricing.month')}</span>
+                  )}
+                </div>
+              </CardHeader>
 
-            <CardFooter>
-              <Button
-                onClick={() => handleSubscribe(plan.name)}
-                className={
-                  `w-full ${
-                    plan.highlighted
+              <CardContent className="space-y-4 pb-8">
+                <ul className="space-y-3">
+                  {(lp.features || []).map((feature, featureIndex) => (
+                    <li
+                      key={featureIndex}
+                      className="flex items-start gap-3"
+                      data-testid={`plan-${index}-feature-${featureIndex}`}
+                    >
+                      <Check className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <span className="text-gray-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+
+              <CardFooter>
+                <Button
+                  onClick={() => handleSubscribe(lp.name)}
+                  className={
+                    `w-full ${lp.highlighted
                       ? 'bg-primary hover:bg-primary/90 glow'
                       : 'bg-muted hover:bg-muted/80'
-                  }`
-                }
-                size="lg"
-                data-testid={`${plan.testid}-cta`}
-              >
-                {plan.cta}
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+                    }`
+                  }
+                  size="lg"
+                  data-testid={`plan-${index}-cta`}
+                >
+                  {lp.cta}
+                </Button>
+              </CardFooter>
+            </Card>
+          );
+        })}
       </div>
 
       {/* FAQ Section */}
@@ -266,19 +283,19 @@ const Pricing = () => {
               {currentCta.subtitle}
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
-              <Button 
-                size="lg" 
-                className="bg-primary hover:bg-primary/90 glow" 
+              <Button
+                size="lg"
+                className="bg-primary hover:bg-primary/90 glow"
                 onClick={() => navigate('/register')}
                 data-testid="cta-start-now"
               >
                 <Sparkles className="mr-2 h-5 w-5" />
-                {currentCta.startNow}
+                <span>{currentCta.startNow}</span>
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                onClick={() => toast.info('Email: contact@boosttribe.com')}
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => window.location.href = 'mailto:contact@boosttribe.com'}
                 data-testid="cta-contact"
               >
                 {currentCta.contact}

@@ -24,9 +24,31 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+const quillModules = {
+  toolbar: [
+    [{ 'header': [1, 2, false] }],
+    ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+    [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
+    ['link', 'image', 'clean'],
+    [{ 'color': [] }, { 'background': [] }],
+    [{ 'align': [] }],
+  ],
+};
+
+const quillFormats = [
+  'header',
+  'bold', 'italic', 'underline', 'strike', 'blockquote',
+  'list', 'bullet', 'indent',
+  'link', 'image',
+  'color', 'background',
+  'align',
+];
 
 const Campaigns = () => {
   const { t } = useTranslation();
@@ -116,7 +138,7 @@ const Campaigns = () => {
 
   const handleDeleteCampaign = async (campaignId) => {
     if (!window.confirm(t('campaigns.confirmDelete'))) return;
-    
+
     try {
       await axios.delete(`${API}/campaigns/${campaignId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -131,7 +153,7 @@ const Campaigns = () => {
 
   const handleSendCampaign = async (campaignId) => {
     if (!window.confirm('Voulez-vous vraiment envoyer cette campagne maintenant ?')) return;
-    
+
     try {
       await axios.post(`${API}/campaigns/${campaignId}/send`, {}, {
         headers: { Authorization: `Bearer ${token}` }
@@ -155,13 +177,13 @@ const Campaigns = () => {
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (aiType === 'email') {
         setFormData({ ...formData, content_html: response.data.content });
       } else if (aiType === 'subject') {
         setFormData({ ...formData, subject: response.data.content });
       }
-      
+
       toast.success('Contenu généré avec succès par l\'IA');
       setShowAIDialog(false);
       setAiPrompt('');
@@ -198,7 +220,7 @@ const Campaigns = () => {
         target_groups: campaign.target_groups || [],
         target_tags: campaign.target_tags || []
       };
-      
+
       await axios.post(`${API}/campaigns`, duplicatedData, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -280,7 +302,7 @@ const Campaigns = () => {
                   </div>
                   {getStatusBadge(campaign.status)}
                 </div>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between text-gray-400">
                     <span>{t('campaigns.language')}:</span>
@@ -314,7 +336,7 @@ const Campaigns = () => {
                     <Edit className="mr-1 h-3 w-3" />
                     {t('campaigns.edit')}
                   </Button>
-                  
+
                   {/* Duplicate button - available for all campaigns */}
                   <Button
                     size="sm"
@@ -326,7 +348,7 @@ const Campaigns = () => {
                     <Copy className="mr-1 h-3 w-3" />
                     {t('campaigns.duplicate')}
                   </Button>
-                  
+
                   {/* Send button - only for draft campaigns */}
                   {campaign.status === 'draft' && (
                     <Button
@@ -339,7 +361,7 @@ const Campaigns = () => {
                       {t('campaigns.send')}
                     </Button>
                   )}
-                  
+
                   {/* Delete button - available for all campaigns */}
                   <Button
                     size="sm"
@@ -426,19 +448,19 @@ const Campaigns = () => {
                   data-testid="create-subject-input"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('campaigns.content')}</Label>
-                <Textarea
-                  value={formData.content_html}
-                  onChange={(e) => setFormData({ ...formData, content_html: e.target.value })}
-                  placeholder="<p>Bonjour,</p><p>Votre contenu HTML ici...</p>"
-                  rows={10}
-                  className="font-mono text-sm"
-                  data-testid="create-content-editor"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Contenu HTML (utilisez des balises: &lt;p&gt;, &lt;strong&gt;, &lt;br&gt;, &lt;a&gt;)
-                </p>
+                <div className="bg-white text-black rounded-md overflow-hidden">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.content_html}
+                    onChange={(content) => setFormData({ ...formData, content_html: content })}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    className="min-h-[200px]"
+                    placeholder={t('campaigns.contentPlaceholder') || "Rédigez votre email ici..."}
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="scheduled">{t('campaigns.schedule')} (optionnel)</Label>
@@ -524,18 +546,19 @@ const Campaigns = () => {
                   data-testid="edit-subject-input"
                 />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('campaigns.content')}</Label>
-                <Textarea
-                  value={formData.content_html}
-                  onChange={(e) => setFormData({ ...formData, content_html: e.target.value })}
-                  rows={10}
-                  className="font-mono text-sm"
-                  data-testid="edit-content-editor"
-                />
-                <p className="text-xs text-gray-400 mt-1">
-                  Contenu HTML
-                </p>
+                <div className="bg-white text-black rounded-md overflow-hidden">
+                  <ReactQuill
+                    theme="snow"
+                    value={formData.content_html}
+                    onChange={(content) => setFormData({ ...formData, content_html: content })}
+                    modules={quillModules}
+                    formats={quillFormats}
+                    className="min-h-[200px]"
+                    placeholder={formData.content_html ? "" : "Modifier le contenu..."}
+                  />
+                </div>
               </div>
             </div>
             <DialogFooter>

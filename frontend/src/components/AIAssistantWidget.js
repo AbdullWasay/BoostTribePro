@@ -174,8 +174,8 @@ const AIAssistantWidget = () => {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-white" />
               <div>
-                <h3 className="font-semibold text-white">Assistant IA</h3>
-                <p className="text-xs text-white/80">Propulsé par GPT-4o</p>
+                <h3 className="font-semibold text-white"><span>Assistant IA</span></h3>
+                <p className="text-xs text-white/80"><span>Propulsé par GPT-4o</span></p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -202,28 +202,28 @@ const AIAssistantWidget = () => {
               className={`cursor-pointer ${taskType === 'general' ? 'bg-primary' : 'bg-gray-600'}`}
             >
               <MessageCircle className="h-3 w-3 mr-1" />
-              Général
+              <span>Général</span>
             </Badge>
             <Badge
               onClick={() => changeTaskType('campaign')}
               className={`cursor-pointer ${taskType === 'campaign' ? 'bg-primary' : 'bg-gray-600'}`}
             >
               <Mail className="h-3 w-3 mr-1" />
-              Campagne
+              <span>Campagne</span>
             </Badge>
             <Badge
               onClick={() => changeTaskType('analysis')}
               className={`cursor-pointer ${taskType === 'analysis' ? 'bg-primary' : 'bg-gray-600'}`}
             >
               <BarChart className="h-3 w-3 mr-1" />
-              Analyse
+              <span>Analyse</span>
             </Badge>
             <Badge
               onClick={() => changeTaskType('strategy')}
               className={`cursor-pointer ${taskType === 'strategy' ? 'bg-primary' : 'bg-gray-600'}`}
             >
               <Target className="h-3 w-3 mr-1" />
-              Stratégie
+              <span>Stratégie</span>
             </Badge>
           </div>
 
@@ -235,16 +235,15 @@ const AIAssistantWidget = () => {
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg p-3 ${
-                    message.role === 'user'
+                  className={`max-w-[80%] rounded-lg p-3 ${message.role === 'user'
                       ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
                       : 'bg-background/80 border border-primary/20'
-                  }`}
+                    }`}
                 >
                   {message.role === 'assistant' && (
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="h-3 w-3 text-primary" />
-                      <span className="text-xs text-gray-400">Assistant</span>
+                      <span className="text-xs text-gray-400"><span>Assistant</span></span>
                     </div>
                   )}
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -262,7 +261,7 @@ const AIAssistantWidget = () => {
                 <div className="bg-background/80 border border-primary/20 rounded-lg p-3 max-w-[80%]">
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-3 w-3 text-primary animate-spin" />
-                    <span className="text-sm text-gray-400">L'assistant réfléchit...</span>
+                    <span className="text-sm text-gray-400"><span>L'assistant réfléchit...</span></span>
                   </div>
                 </div>
               </div>
@@ -306,7 +305,7 @@ const AIAssistantWidget = () => {
               </Button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              💡 Appuyez sur Entrée pour envoyer
+              <span>💡 Appuyez sur Entrée pour envoyer</span>
             </p>
           </div>
         </div>

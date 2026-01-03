@@ -21,7 +21,8 @@ import Admin from '@/pages/Admin';
 import Pricing from '@/pages/Pricing';
 import Profile from '@/pages/Profile';
 import PaymentSettings from '@/pages/PaymentSettings';
-import PricingManagement from '@/pages/PricingManagement';
+import AdminPlans from '@/pages/AdminPlans';
+import AdminUsers from '@/pages/AdminUsers';
 import Catalog from '@/pages/Catalog';
 import Reservations from '@/pages/Reservations';
 import ReservationSuccess from '@/pages/ReservationSuccess';
@@ -49,7 +50,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
-            
+
             {/* Public catalog routes */}
             <Route path="/catalog/public" element={<PublicCatalog />} />
             <Route path="/p/:slug" element={<ProductPage />} />
@@ -57,6 +58,7 @@ function App() {
             <Route path="/reservation-success" element={<ReservationSuccess />} />
             <Route path="/chat-public" element={<AdChatPublic />} />
             <Route path="/chat-public/:userId" element={<AdChatPublicPage />} />
+            <Route path="/chat/:slug" element={<AdChatPublic />} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={
@@ -143,9 +145,14 @@ function App() {
                 <Layout><Admin /></Layout>
               </ProtectedRoute>
             } />
-            <Route path="/admin/pricing-plans" element={
-              <ProtectedRoute requireAdmin={true}>
-                <Layout><PricingManagement /></Layout>
+            <Route path="/admin/plans" element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <Layout><AdminPlans /></Layout>
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute requireSuperAdmin={true}>
+                <Layout><AdminUsers /></Layout>
               </ProtectedRoute>
             } />
           </Routes>

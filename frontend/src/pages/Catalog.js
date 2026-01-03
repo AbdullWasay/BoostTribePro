@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
-import { Plus, Edit, Trash2, Eye, Package, Calendar, DollarSign, Share2, Copy, Mail, MessageCircle, ExternalLink, Play } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Package, Calendar, DollarSign, Share2, Copy, Mail, MessageCircle, ExternalLink, Play, Copy as CopyIcon, Files } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import ImageUploader from '@/components/ImageUploader';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -31,7 +32,7 @@ const Catalog = () => {
   const { token } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
-  
+
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
@@ -50,7 +51,7 @@ const Catalog = () => {
   const [filterCategory, setFilterCategory] = useState('all');
   const [categorySelectOpen, setCategorySelectOpen] = useState(false);
   const [currencySelectOpen, setCurrencySelectOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -104,7 +105,7 @@ const Catalog = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       const payload = {
         ...formData,
@@ -114,10 +115,10 @@ const Catalog = () => {
         event_duration: formData.event_duration ? parseInt(formData.event_duration) : null,
       };
 
-      const url = editingItem 
+      const url = editingItem
         ? `${API}/catalog/${editingItem.id}`
         : `${API}/catalog`;
-      
+
       const method = editingItem ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
@@ -133,7 +134,7 @@ const Catalog = () => {
         // Close Select dropdowns first to prevent portal cleanup issues
         setCategorySelectOpen(false);
         setCurrencySelectOpen(false);
-        
+
         // Use requestAnimationFrame to ensure React processes state updates before closing dialog
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
@@ -142,7 +143,7 @@ const Catalog = () => {
             fetchItems();
           });
         });
-        
+
         toast({
           title: "✅ Succès",
           description: editingItem ? t('catalog.editItem') : t('catalog.createItem')
@@ -180,6 +181,61 @@ const Catalog = () => {
       is_active: item.is_active !== undefined ? item.is_active : true
     });
     setShowDialog(true);
+  };
+
+  const handleDuplicate = async (item) => {
+    try {
+      const duplicatedData = {
+        title: `${item.title} (${t('catalog.copy') || 'Copy'})`,
+        description: item.description,
+        category: item.category,
+        price: item.price,
+        currency: item.currency,
+        image_url: item.image_url || '',
+        stock_quantity: item.stock_quantity,
+        max_attendees: item.max_attendees,
+        event_date: item.event_date || null,
+        event_duration: item.event_duration,
+        location: item.location || '',
+        is_recurring: item.is_recurring || false,
+        recurrence_type: item.recurrence_type || 'weekly',
+        recurrence_days: item.recurrence_days || [],
+        recurrence_time: item.recurrence_time || '',
+        is_published: false, // Duplicated items should be unpublished by default
+        is_active: item.is_active !== undefined ? item.is_active : true
+      };
+
+      const response = await fetch(`${API}/catalog`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(duplicatedData)
+      });
+
+      if (response.ok) {
+        toast({
+          title: "✅ Succès",
+          description: t('catalog.itemDuplicated') || 'Article dupliqué avec succès'
+        });
+        fetchItems();
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast({
+          title: "Erreur",
+          description: errorData.detail || "Impossible de dupliquer l'article",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error duplicating item:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de dupliquer l'article",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleDelete = async (id) => {
@@ -281,7 +337,7 @@ const Catalog = () => {
         }
 
         const data = await response.json();
-        
+
         // Redirect to Stripe
         window.location.href = data.url;
       } else {
@@ -387,8 +443,8 @@ const Catalog = () => {
     return labels[category] || category;
   };
 
-  const filteredItems = filterCategory === 'all' 
-    ? items 
+  const filteredItems = filterCategory === 'all'
+    ? items
     : items.filter(item => item.category === filterCategory);
 
   if (loading) {
@@ -459,15 +515,15 @@ const Catalog = () => {
                     const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
                     // Check if it's an image URL
                     const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url) || url.match(/^(https?:\/\/).*\.(jpg|jpeg|png|gif|webp|bmp|svg)/i);
-                    
+
                     if (youtubeMatch) {
                       const videoId = youtubeMatch[1];
                       return (
-                        <div 
+                        <div
                           className="w-full h-full relative group cursor-pointer"
                           onClick={() => window.open(url, '_blank')}
                         >
-                          <img 
+                          <img
                             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
                             alt={item.title}
                             className="w-full h-full object-cover"
@@ -488,7 +544,7 @@ const Catalog = () => {
                     } else if (vimeoMatch) {
                       const videoId = vimeoMatch[1];
                       return (
-                        <div 
+                        <div
                           className="w-full h-full relative group cursor-pointer bg-black"
                           onClick={() => window.open(url, '_blank')}
                         >
@@ -508,8 +564,8 @@ const Catalog = () => {
                     } else if (isImage || !url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('vimeo.com')) {
                       // Display as image if it's an image file or not a video URL
                       return (
-                        <img 
-                          src={url} 
+                        <img
+                          src={url}
                           alt={item.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -567,7 +623,7 @@ const Catalog = () => {
                 <p className="text-xs sm:text-sm text-gray-400 mb-4 line-clamp-2">
                   {item.description}
                 </p>
-                
+
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                   <div className="text-xl sm:text-2xl font-bold text-primary">
                     {item.price} {item.currency}
@@ -622,6 +678,18 @@ const Catalog = () => {
                       title={t('catalog.viewPublic') || 'View Public'}
                     >
                       <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDuplicate(item);
+                      }}
+                      className="flex-shrink-0"
+                      title={t('catalog.duplicate') || 'Duplicate'}
+                    >
+                      <Files className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
@@ -689,8 +757,8 @@ const Catalog = () => {
       )}
 
       {/* Create/Edit Dialog */}
-      <Dialog 
-        open={showDialog} 
+      <Dialog
+        open={showDialog}
         onOpenChange={(open) => {
           setShowDialog(open);
           if (!open) {
@@ -778,107 +846,16 @@ const Catalog = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image_url">{t('catalog.imageVideoUrl')}</Label>
-              <Input
-                id="image_url"
+              <ImageUploader
                 value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder={t('catalog.imageVideoPlaceholder')}
+                onChange={(url) => setFormData({ ...formData, image_url: url })}
+                label={t('catalog.imageVideoUrl')}
               />
               <p className="text-xs text-gray-500">
                 {t('catalog.imageVideoHint')}
               </p>
-              
-              {/* Preview */}
-              {formData.image_url && (() => {
-                const url = formData.image_url;
-                // Improved YouTube URL matching
-                const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)/);
-                // Improved Vimeo URL matching
-                const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
-                // Check if it's an image URL
-                const isImage = /\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url) || url.match(/^(https?:\/\/).*\.(jpg|jpeg|png|gif|webp|bmp|svg)/i);
-                
-                // Get video IDs for unique keys
-                const youtubeId = youtubeMatch ? youtubeMatch[1] : null;
-                const vimeoId = vimeoMatch ? vimeoMatch[1] : null;
-                
-                return (
-                  <div key={`preview-container-${url}`} className="mt-2 p-3 bg-gray-800 rounded-lg border border-gray-700">
-                    <p className="text-xs text-gray-400 mb-2">{t('catalog.preview')}</p>
-                    {youtubeMatch ? (
-                      <div 
-                        className="relative w-full aspect-video rounded overflow-hidden cursor-pointer group"
-                        onClick={() => window.open(url, '_blank')}
-                      >
-                        <img 
-                          src={`https://img.youtube.com/vi/${youtubeMatch[1]}/maxresdefault.jpg`}
-                          alt="YouTube video thumbnail"
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.src = `https://img.youtube.com/vi/${youtubeMatch[1]}/hqdefault.jpg`;
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/30 group-hover:bg-black/40 flex items-center justify-center transition-colors">
-                          <div className="w-20 h-20 bg-primary/90 rounded-full flex items-center justify-center shadow-lg group-hover:bg-primary transition-colors">
-                            <Play className="h-10 w-10 text-white ml-1" fill="white" />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-                          <span>YouTube</span>
-                        </div>
-                      </div>
-                    ) : vimeoMatch ? (
-                      <div 
-                        className="relative w-full aspect-video rounded overflow-hidden cursor-pointer group bg-black"
-                        onClick={() => window.open(url, '_blank')}
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-20 h-20 bg-primary/90 rounded-full flex items-center justify-center mx-auto mb-2 shadow-lg group-hover:bg-primary transition-colors">
-                              <Play className="h-10 w-10 text-white ml-1" fill="white" />
-                            </div>
-                            <p className="text-sm text-gray-300">Vimeo Video</p>
-                            <p className="text-xs text-gray-500 mt-1">Click to open</p>
-                          </div>
-                        </div>
-                        <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          Vimeo
-                        </div>
-                      </div>
-                    ) : isImage || (!url.includes('youtube.com') && !url.includes('youtu.be') && !url.includes('vimeo.com')) ? (
-                      <div className="relative">
-                        <img 
-                          src={url} 
-                          alt="Preview" 
-                          className="w-full h-48 object-cover rounded"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            const errorDiv = e.target.nextElementSibling;
-                            if (errorDiv) errorDiv.style.display = 'flex';
-                          }}
-                        />
-                        <div className="hidden w-full h-48 bg-gray-900 rounded items-center justify-center text-gray-500 text-sm">
-                          {t('catalog.previewError')}
-                          <br />
-                          <span className="text-xs text-gray-600">{t('catalog.previewErrorDesc')}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-32 bg-gray-900 rounded flex items-center justify-center text-gray-500 text-sm">
-                        <div className="text-center">
-                          <ExternalLink className="h-6 w-6 mx-auto mb-2" />
-                          <p>{t('catalog.urlNotRecognized')}</p>
-                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline text-xs mt-1 block">
-                            {t('catalog.testLink')}
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </div>
+
 
             {formData.category === 'product' && (
               <div>
@@ -944,8 +921,8 @@ const Catalog = () => {
                       type="checkbox"
                       id="is_recurring"
                       checked={formData.is_recurring}
-                      onChange={(e) => setFormData({ 
-                        ...formData, 
+                      onChange={(e) => setFormData({
+                        ...formData,
                         is_recurring: e.target.checked,
                         event_date: e.target.checked ? '' : formData.event_date
                       })}
@@ -985,11 +962,10 @@ const Catalog = () => {
                                     : [...currentDays, day.key];
                                   setFormData({ ...formData, recurrence_days: days });
                                 }}
-                                className={`p-2 rounded text-sm font-medium transition-colors ${
-                                  currentDays.includes(day.key)
-                                    ? 'bg-primary text-white'
-                                    : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
-                                }`}
+                                className={`p-2 rounded text-sm font-medium transition-colors ${currentDays.includes(day.key)
+                                  ? 'bg-primary text-white'
+                                  : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
+                                  }`}
                               >
                                 {t(`catalog.days.${day.key}`)}
                               </button>
@@ -1072,7 +1048,7 @@ const Catalog = () => {
               Réserver : {selectedItem?.title}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             {selectedItem && (
               <div className="bg-primary/10 p-3 rounded-lg border border-primary/30">
@@ -1093,7 +1069,7 @@ const Catalog = () => {
               <Input
                 id="res_name"
                 value={reservationForm.customer_name}
-                onChange={(e) => setReservationForm({...reservationForm, customer_name: e.target.value})}
+                onChange={(e) => setReservationForm({ ...reservationForm, customer_name: e.target.value })}
                 placeholder="Jean Dupont"
               />
             </div>
@@ -1104,7 +1080,7 @@ const Catalog = () => {
                 id="res_email"
                 type="email"
                 value={reservationForm.customer_email}
-                onChange={(e) => setReservationForm({...reservationForm, customer_email: e.target.value})}
+                onChange={(e) => setReservationForm({ ...reservationForm, customer_email: e.target.value })}
                 placeholder="jean@example.com"
               />
             </div>
@@ -1115,7 +1091,7 @@ const Catalog = () => {
                 id="res_phone"
                 type="tel"
                 value={reservationForm.customer_phone}
-                onChange={(e) => setReservationForm({...reservationForm, customer_phone: e.target.value})}
+                onChange={(e) => setReservationForm({ ...reservationForm, customer_phone: e.target.value })}
                 placeholder="+41 79 123 45 67"
               />
             </div>
@@ -1128,7 +1104,7 @@ const Catalog = () => {
                 min="1"
                 max={selectedItem?.max_attendees ? selectedItem.max_attendees - (selectedItem.current_attendees || 0) : 10}
                 value={reservationForm.quantity}
-                onChange={(e) => setReservationForm({...reservationForm, quantity: parseInt(e.target.value)})}
+                onChange={(e) => setReservationForm({ ...reservationForm, quantity: parseInt(e.target.value) })}
               />
             </div>
 
@@ -1138,7 +1114,7 @@ const Catalog = () => {
                 id="res_notes"
                 className="w-full bg-background border border-gray-700 rounded-md px-3 py-2 text-white min-h-[80px]"
                 value={reservationForm.notes}
-                onChange={(e) => setReservationForm({...reservationForm, notes: e.target.value})}
+                onChange={(e) => setReservationForm({ ...reservationForm, notes: e.target.value })}
                 placeholder="Allergies, besoins spéciaux, etc."
               />
             </div>
@@ -1153,7 +1129,7 @@ const Catalog = () => {
                       name="payment_method"
                       value="stripe"
                       checked={reservationForm.payment_method === 'stripe'}
-                      onChange={(e) => setReservationForm({...reservationForm, payment_method: e.target.value})}
+                      onChange={(e) => setReservationForm({ ...reservationForm, payment_method: e.target.value })}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-white">💳 Payer maintenant (Stripe)</span>
@@ -1164,7 +1140,7 @@ const Catalog = () => {
                       name="payment_method"
                       value="free"
                       checked={reservationForm.payment_method === 'free'}
-                      onChange={(e) => setReservationForm({...reservationForm, payment_method: e.target.value})}
+                      onChange={(e) => setReservationForm({ ...reservationForm, payment_method: e.target.value })}
                       className="w-4 h-4 text-primary"
                     />
                     <span className="text-white">📝 Réserver sans payer (confirmation requise)</span>
@@ -1208,7 +1184,7 @@ const Catalog = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 };
 

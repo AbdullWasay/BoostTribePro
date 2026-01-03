@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Percent, Plus, Calendar, Tag, TrendingDown, Edit2, Trash2 } from 'lucide-react';
+import { Percent, Plus, Calendar, Tag, TrendingDown, Edit2, Trash2, Copy } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
@@ -17,12 +17,12 @@ const Discounts = () => {
   const { user, token } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
-  
+
   const [discounts, setDiscounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingDiscount, setEditingDiscount] = useState(null);
-  
+
   const [formData, setFormData] = useState({
     code: '',
     discount_type: 'percentage',
@@ -63,7 +63,7 @@ const Discounts = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const data = {
         ...formData,
@@ -91,12 +91,12 @@ const Discounts = () => {
           data,
           { headers: { Authorization: `Bearer ${token}` } }
         );
-      toast({
-        title: `✅ ${t('discounts.discountCreated')}`,
-        description: t('discounts.discountCreatedDesc')
-      });
+        toast({
+          title: `✅ ${t('discounts.discountCreated')}`,
+          description: t('discounts.discountCreatedDesc')
+        });
       }
-      
+
       setShowCreateForm(false);
       setEditingDiscount(null);
       resetForm();
@@ -136,7 +136,7 @@ const Discounts = () => {
 
   const handleDelete = async (discountId) => {
     if (!window.confirm(t('discounts.confirmDelete'))) return;
-    
+
     try {
       await axios.delete(`${API_URL}/api/discounts/${discountId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -151,6 +151,46 @@ const Discounts = () => {
       toast({
         title: '❌ Erreur',
         description: t('discounts.errorDeleting'),
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleDuplicate = async (discount) => {
+    try {
+      // Create a copy data with a unique code
+      const duplicatedData = {
+        ...discount,
+        id: undefined, // Let backend generate new ID
+        code: `${discount.code}_COPY_${Math.floor(Math.random() * 1000)}`,
+        name: `${discount.name} (Copy)`,
+        usage_count: 0,
+        start_date: new Date().toISOString(),
+        is_active: true
+      };
+
+      // Clean up fields that shouldn't be in the POST request if they are null/internal
+      delete duplicatedData.id;
+      delete duplicatedData.usage_count;
+      delete duplicatedData.created_at;
+      delete duplicatedData.updated_at;
+
+      await axios.post(
+        `${API_URL}/api/discounts`,
+        duplicatedData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      toast({
+        title: `✅ ${t('discounts.discountDuplicated') || 'Discount Duplicated'}`,
+        description: t('discounts.discountDuplicatedDesc') || 'A new copy of the discount has been created.'
+      });
+      fetchDiscounts();
+    } catch (error) {
+      console.error('Error duplicating discount:', error);
+      toast({
+        title: '❌ Erreur',
+        description: error.response?.data?.detail || 'Impossible de dupliquer le coupon',
         variant: 'destructive'
       });
     }
@@ -179,7 +219,7 @@ const Discounts = () => {
     const now = new Date();
     const startDate = new Date(discount.start_date);
     const endDate = new Date(discount.end_date);
-    
+
     if (!discount.is_active) {
       return <Badge className="bg-gray-500/20 text-gray-400">{t('discounts.statusDisabled')}</Badge>;
     }
@@ -411,6 +451,14 @@ const Discounts = () => {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => handleDuplicate(discount)}
+                      title={t('discounts.duplicate') || 'Duplicate'}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={() => handleEdit(discount)}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -430,8 +478,8 @@ const Discounts = () => {
                   <div>
                     <p className="text-xs text-gray-400">{t('discounts.discount')}</p>
                     <p className="text-lg font-semibold text-primary">
-                      {discount.discount_type === 'percentage' 
-                        ? `${discount.discount_value}%` 
+                      {discount.discount_type === 'percentage'
+                        ? `${discount.discount_value}%`
                         : `${discount.discount_value} ${discount.currency}`}
                     </p>
                   </div>

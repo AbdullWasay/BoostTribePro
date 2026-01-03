@@ -14,7 +14,7 @@ const Login = () => {
   const { login, user, loading: authLoading } = useAuth();
   const { t } = useTranslation();
   const { toast } = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +37,7 @@ const Login = () => {
         title: `✅ ${t('auth.login.success')}`,
         description: `${t('auth.login.welcome')} ${result.user.name} !`,
       });
-      
+
       // Use requestAnimationFrame to ensure React processes state updates before navigation
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -61,7 +61,7 @@ const Login = () => {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <p className="text-gray-400"><span>Loading...</span></p>
         </div>
       </div>
     );
@@ -83,14 +83,14 @@ const Login = () => {
           <h1 className="text-4xl font-bold">
             <span className="text-gradient">BoostTribe</span>
           </h1>
-          <p className="text-gray-400 mt-2">{t('nav.dashboard')}</p>
+          <p className="text-gray-400 mt-2"><span>{t('nav.dashboard')}</span></p>
         </div>
 
         <Card className="glass border-primary/20">
           <CardHeader>
-            <CardTitle className="text-2xl text-center">{t('auth.login.title')}</CardTitle>
+            <CardTitle className="text-2xl text-center"><span>{t('auth.login.title')}</span></CardTitle>
             <CardDescription className="text-center">
-              {t('auth.login.subtitle')}
+              <span>{t('auth.login.subtitle')}</span>
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -135,12 +135,12 @@ const Login = () => {
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {t('auth.login.loading')}
+                    <span>{t('auth.login.loading')}</span>
                   </>
                 ) : (
                   <>
                     <LogIn className="mr-2 h-4 w-4" />
-                    {t('auth.login.submit')}
+                    <span>{t('auth.login.submit')}</span>
                   </>
                 )}
               </Button>
@@ -148,22 +148,22 @@ const Login = () => {
 
             <div className="mt-4 text-center">
               <Link to="/forgot-password" className="text-sm text-primary hover:underline">
-                Mot de passe oublié ?
+                <span>Mot de passe oublié ?</span>
               </Link>
             </div>
 
             <div className="mt-6 text-center text-sm">
               <p className="text-gray-400">
-                {t('auth.login.noAccount')}{' '}
+                <span>{t('auth.login.noAccount')}</span>{' '}
                 <Link to="/register" className="text-primary hover:underline">
-                  {t('auth.login.createAccount')}
+                  <span>{t('auth.login.createAccount')}</span>
                 </Link>
               </p>
             </div>
 
             <div className="mt-4 text-center">
               <Link to="/" className="text-sm text-gray-400 hover:text-primary">
-                {t('auth.login.backHome')}
+                <span>{t('auth.login.backHome')}</span>
               </Link>
             </div>
           </CardContent>

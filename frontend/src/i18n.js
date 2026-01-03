@@ -453,7 +453,8 @@ const resources = {
           ]
         },
         tryNow: 'Essayer maintenant',
-        subscribe: 'Souscrire'
+        subscribe: 'Souscrire',
+        month: 'mois'
       },
       catalog: {
         title: 'Catalogue',
@@ -539,7 +540,10 @@ const resources = {
         previewError: '⚠️ Impossible de charger l\'aperçu',
         previewErrorDesc: 'Vérifiez que l\'URL est correcte et accessible',
         urlNotRecognized: 'URL non reconnue',
-        testLink: 'Tester le lien'
+        testLink: 'Tester le lien',
+        duplicate: 'Dupliquer',
+        itemDuplicated: 'Article dupliqué avec succès',
+        copy: 'Copie'
       },
       reservations: {
         title: 'Réservations',
@@ -732,6 +736,8 @@ const resources = {
         errorDeleting: 'Impossible de supprimer la réduction',
         errorSaving: 'Impossible de sauvegarder la réduction',
         confirmDelete: 'Êtes-vous sûr de vouloir supprimer cette réduction ?',
+        discountDuplicated: 'Réduction dupliquée',
+        discountDuplicatedDesc: 'Une nouvelle copie de la réduction a été créée.',
         statusDisabled: 'Désactivée',
         statusUpcoming: 'À venir',
         statusExpired: 'Expirée',
@@ -744,6 +750,56 @@ const resources = {
         minimumPurchaseLabel: 'Achat minimum',
         noDiscounts: 'Aucune réduction pour le moment',
         createFirst: 'Créer votre première réduction'
+      },
+      superadmin: {
+        users: {
+          title: 'Gestion des Utilisateurs',
+          subtitle: 'Gérez les comptes, les rôles et les abonnements des membres de la tribu.',
+          listTitle: 'Liste des Inscrits',
+          listSubtitle: 'Tous les utilisateurs enregistrés sur la plateforme.',
+          user: 'Utilisateur',
+          role: 'Rôle',
+          plan: 'Plan',
+          joined: 'Inscrit le',
+          actions: 'Actions',
+          loading: 'Chargement des utilisateurs...',
+          updateSuccess: 'Utilisateur mis à jour',
+          updateError: 'Erreur lors de la mise à jour',
+          deleteConfirm: 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
+          deleteSuccess: 'Utilisateur supprimé',
+          deleteError: 'Erreur lors de la suppression',
+          promoteAdmin: 'Nommer Admin',
+          demoteAdmin: 'Retirer Admin',
+          upgradePro: 'Mettre à jour en Pro',
+          downgradeFree: 'Rétrograder en Free',
+          ban: 'Bannir',
+          unban: 'Débloquer',
+          delete: 'Supprimer'
+        },
+        plans: {
+          title: 'Gestion Plans Tarifaires',
+          subtitle: 'Modifiez prix et limites',
+          recommended: 'Recommandé',
+          perMonth: 'par mois',
+          limits: 'Limites:',
+          emails: 'Emails',
+          whatsapp: 'WhatsApp',
+          unlimited: 'Illimité',
+          active: 'Actif',
+          inactive: 'Inactif',
+          editTitle: 'Modifier Plan',
+          price: 'Prix',
+          currency: 'Devise',
+          emailsLimit: 'Emails/mois (-1 = illimité)',
+          whatsappLimit: 'WhatsApp/mois (-1 = illimité)',
+          features: 'Features (une par ligne)',
+          save: 'Enregistrer',
+          cancel: 'Annuler',
+          description: 'Description',
+          updateSuccess: 'Plan modifié avec succès',
+          updateError: 'Erreur modification',
+          loading: 'Chargement...'
+        }
       },
       adChat: {
         title: 'Chat Publicités',
@@ -764,7 +820,24 @@ const resources = {
         selectConversation: 'Sélectionnez une conversation',
         linkCopied: '✅ Lien copié',
         linkCopiedDesc: 'Lien public copié dans le presse-papier',
-        noMessage: 'Pas de message'
+        noMessage: 'Pas de message',
+        convertToLead: 'Convertir en contact',
+        convertSuccess: 'Chat converti en contact',
+        convertError: 'Erreur lors de la conversion',
+        welcome: 'Bienvenue ! 🎉',
+        assistantTitle: 'Assistant BoostTribe',
+        online: 'En ligne',
+        activeAI: 'IA Active',
+        visitorName: 'Votre nom *',
+        visitorEmail: 'Email *',
+        visitorPhone: 'Téléphone',
+        visitorMessage: 'Votre message *',
+        startChat: 'Démarrer la conversation',
+        connecting: 'Connexion...',
+        chatWith: 'Discutez avec {{name}}',
+        askQuestion: 'Posez vos questions directement {{coach}}',
+        typeMessage: 'Tapez votre message...',
+        guestWarning: '⚠️ Mode invité : Votre historique de chat peut être perdu. Inscrivez-vous gratuitement pour sauvegarder vos conversations !'
       },
       profile: {
         title: 'Mon Profil',
@@ -966,7 +1039,8 @@ const resources = {
         loading: 'Chargement...',
         success: 'Succès',
         error: 'Erreur',
-        confirm: 'Confirmer'
+        confirm: 'Confirmer',
+        backToHome: 'Retour à l\'accueil'
       }
     }
   },
@@ -1396,7 +1470,8 @@ const resources = {
           ]
         },
         tryNow: 'Try now',
-        subscribe: 'Subscribe'
+        subscribe: 'Subscribe',
+        month: 'month'
       },
       catalog: {
         title: 'Catalog',
@@ -1482,7 +1557,10 @@ const resources = {
         previewError: '⚠️ Unable to load preview',
         previewErrorDesc: 'Check that the URL is correct and accessible',
         urlNotRecognized: 'URL not recognized',
-        testLink: 'Test link'
+        testLink: 'Test link',
+        duplicate: 'Duplicate',
+        itemDuplicated: 'Item duplicated successfully',
+        copy: 'Copy'
       },
       reservations: {
         title: 'Reservations',
@@ -1648,6 +1726,8 @@ const resources = {
         errorDeleting: 'Unable to delete discount',
         errorSaving: 'Unable to save discount',
         confirmDelete: 'Are you sure you want to delete this discount?',
+        discountDuplicated: 'Discount duplicated',
+        discountDuplicatedDesc: 'A new copy of the discount has been created.',
         statusDisabled: 'Disabled',
         statusUpcoming: 'Upcoming',
         statusExpired: 'Expired',
@@ -1660,6 +1740,56 @@ const resources = {
         minimumPurchaseLabel: 'Minimum Purchase',
         noDiscounts: 'No discounts at the moment',
         createFirst: 'Create your first discount'
+      },
+      superadmin: {
+        users: {
+          title: 'User Management',
+          subtitle: 'Manage accounts, roles and subscriptions of tribe members.',
+          listTitle: 'Subscribers List',
+          listSubtitle: 'All users registered on the platform.',
+          user: 'User',
+          role: 'Role',
+          plan: 'Plan',
+          joined: 'Joined on',
+          actions: 'Actions',
+          loading: 'Loading users...',
+          updateSuccess: 'User updated',
+          updateError: 'Update error',
+          deleteConfirm: 'Are you sure you want to delete this user?',
+          deleteSuccess: 'User deleted',
+          deleteError: 'Delete error',
+          promoteAdmin: 'Make Admin',
+          demoteAdmin: 'Remove Admin',
+          upgradePro: 'Upgrade to Pro',
+          downgradeFree: 'Downgrade to Free',
+          ban: 'Ban',
+          unban: 'Unban',
+          delete: 'Delete'
+        },
+        plans: {
+          title: 'Pricing Plan Management',
+          subtitle: 'Modify prices and limits',
+          recommended: 'Recommended',
+          perMonth: 'per month',
+          limits: 'Limits:',
+          emails: 'Emails',
+          whatsapp: 'WhatsApp',
+          unlimited: 'Unlimited',
+          active: 'Active',
+          inactive: 'Inactive',
+          editTitle: 'Edit Plan',
+          price: 'Price',
+          currency: 'Currency',
+          emailsLimit: 'Emails/month (-1 = unlimited)',
+          whatsappLimit: 'WhatsApp/month (-1 = unlimited)',
+          features: 'Features (one per line)',
+          save: 'Save',
+          cancel: 'Cancel',
+          description: 'Description',
+          updateSuccess: 'Plan modified successfully',
+          updateError: 'Modification error',
+          loading: 'Loading...'
+        }
       },
       adChat: {
         title: 'Ad Chat',
@@ -1680,7 +1810,24 @@ const resources = {
         selectConversation: 'Select a conversation',
         linkCopied: '✅ Link copied',
         linkCopiedDesc: 'Public link copied to clipboard',
-        noMessage: 'No message'
+        noMessage: 'No message',
+        convertToLead: 'Convert to Contact',
+        convertSuccess: 'Chat converted to contact',
+        convertError: 'Conversion error',
+        welcome: 'Welcome! 🎉',
+        assistantTitle: 'BoostTribe Assistant',
+        online: 'Online',
+        activeAI: 'AI Active',
+        visitorName: 'User name *',
+        visitorEmail: 'Email *',
+        visitorPhone: 'Phone',
+        visitorMessage: 'Your message *',
+        startChat: 'Start conversation',
+        connecting: 'Connecting...',
+        chatWith: 'Chat with {{name}}',
+        askQuestion: 'Ask your questions directly {{coach}}',
+        typeMessage: 'Type your message...',
+        guestWarning: '⚠️ Guest mode: Your chat history may be lost. Register for a free account to save your conversations!'
       },
       profile: {
         title: 'My Profile',
@@ -1882,7 +2029,8 @@ const resources = {
         loading: 'Loading...',
         success: 'Success',
         error: 'Error',
-        confirm: 'Confirm'
+        confirm: 'Confirm',
+        backToHome: 'Back to home'
       }
     }
   },
@@ -2336,7 +2484,8 @@ const resources = {
           ]
         },
         tryNow: 'Jetzt testen',
-        subscribe: 'Abonnieren'
+        subscribe: 'Abonnieren',
+        month: 'Monat'
       },
       catalog: {
         title: 'Katalog',
@@ -2422,7 +2571,10 @@ const resources = {
         previewError: '⚠️ Vorschau konnte nicht geladen werden',
         previewErrorDesc: 'Überprüfen Sie, ob die URL korrekt und zugänglich ist',
         urlNotRecognized: 'URL nicht erkannt',
-        testLink: 'Link testen'
+        testLink: 'Link testen',
+        duplicate: 'Duplizieren',
+        itemDuplicated: 'Artikel erfolgreich dupliziert',
+        copy: 'Kopie'
       },
       reservations: {
         title: 'Reservierungen',
@@ -2611,6 +2763,8 @@ const resources = {
         errorUpdating: 'Rabatt kann nicht aktualisiert werden',
         errorDeleting: 'Rabatt kann nicht gelöscht werden',
         confirmDelete: 'Sind Sie sicher, dass Sie diesen Rabatt löschen möchten?',
+        discountDuplicated: 'Rabatt dupliziert',
+        discountDuplicatedDesc: 'Eine neue Kopie des Rabatts wurde erstellt.',
         statusDisabled: 'Deaktiviert',
         statusUpcoming: 'Bevorstehend',
         statusExpired: 'Abgelaufen',
@@ -2623,6 +2777,56 @@ const resources = {
         minimumPurchaseLabel: 'Mindestkauf',
         noDiscounts: 'Keine Rabatte im Moment',
         createFirst: 'Erstellen Sie Ihren ersten Rabatt'
+      },
+      superadmin: {
+        users: {
+          title: 'Benutzerverwaltung',
+          subtitle: 'Konten, Rollen und Abonnements der Tribe-Mitglieder verwalten.',
+          listTitle: 'Abonnentenliste',
+          listSubtitle: 'Alle auf der Plattform registrierten Benutzer.',
+          user: 'Benutzer',
+          role: 'Rolle',
+          plan: 'Plan',
+          joined: 'Beigetreten am',
+          actions: 'Aktionen',
+          loading: 'Benutzer werden geladen...',
+          updateSuccess: 'Benutzer aktualisiert',
+          updateError: 'Fehler beim Aktualisieren',
+          deleteConfirm: 'Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?',
+          deleteSuccess: 'Benutzer gelöscht',
+          deleteError: 'Fehler beim Löschen',
+          promoteAdmin: 'Zum Admin machen',
+          demoteAdmin: 'Admin-Rechte entziehen',
+          upgradePro: 'Upgrade auf Pro',
+          downgradeFree: 'Downgrade auf Free',
+          ban: 'Sperren',
+          unban: 'Entsperren',
+          delete: 'Löschen'
+        },
+        plans: {
+          title: 'Tarifplan-Verwaltung',
+          subtitle: 'Preise und Limits bearbeiten',
+          recommended: 'Empfohlen',
+          perMonth: 'pro Monat',
+          limits: 'Limits:',
+          emails: 'Emails',
+          whatsapp: 'WhatsApp',
+          unlimited: 'Unbegrenzt',
+          active: 'Aktiv',
+          inactive: 'Inaktiv',
+          editTitle: 'Plan bearbeiten',
+          price: 'Preis',
+          currency: 'Währung',
+          emailsLimit: 'Emails/Monat (-1 = unbegrenzt)',
+          whatsappLimit: 'WhatsApp/Monat (-1 = unbegrenzt)',
+          features: 'Funktionen (eine pro Zeile)',
+          save: 'Speichern',
+          cancel: 'Abbrechen',
+          description: 'Beschreibung',
+          updateSuccess: 'Plan erfolgreich geändert',
+          updateError: 'Fehler beim Ändern',
+          loading: 'Wird geladen...'
+        }
       },
       adChat: {
         title: 'Werbe-Chat',
@@ -2643,7 +2847,24 @@ const resources = {
         selectConversation: 'Wählen Sie eine Konversation',
         linkCopied: '✅ Link kopiert',
         linkCopiedDesc: 'Öffentlicher Link in die Zwischenablage kopiert',
-        noMessage: 'Keine Nachricht'
+        noMessage: 'Keine Nachricht',
+        convertToLead: 'In Kontakt umwandeln',
+        convertSuccess: 'Chat wurde in Kontakt umgewandelt',
+        convertError: 'Fehler bei der Umwandlung',
+        welcome: 'Willkommen! 🎉',
+        assistantTitle: 'BoostTribe Assistent',
+        online: 'Online',
+        activeAI: 'KI Aktiv',
+        visitorName: 'Benutzername *',
+        visitorEmail: 'E-Mail *',
+        visitorPhone: 'Telefon',
+        visitorMessage: 'Ihre Nachricht *',
+        startChat: 'Gespräch beginnen',
+        connecting: 'Verbindung wird hergestellt...',
+        chatWith: 'Chatten Sie mit {{name}}',
+        askQuestion: 'Stellen Sie Ihre Fragen direkt {{coach}}',
+        typeMessage: 'Geben Sie Ihre Nachricht ein...',
+        guestWarning: '⚠️ Gastmodus: Ihr Chat-Verlauf kann verloren gehen. Registrieren Sie sich kostenlos, um Ihre Gespräche zu speichern!'
       },
       profile: {
         title: 'Benutzerprofil',
@@ -2824,7 +3045,8 @@ const resources = {
         loading: 'Lädt...',
         success: 'Erfolg',
         error: 'Fehler',
-        confirm: 'Bestätigen'
+        confirm: 'Bestätigen',
+        backToHome: 'Zurück zur Startseite'
       }
     }
   }

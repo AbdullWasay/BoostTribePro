@@ -21,6 +21,8 @@ import pandas as pd
 import stripe
 import bcrypt
 import jwt
+import cloudinary
+import cloudinary.uploader
 
 # Configure logging early so it's available for imports
 logging.basicConfig(
@@ -45,6 +47,20 @@ except ImportError:
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Cloudinary Configuration
+cloudinary.config(
+  cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
+  api_key = os.environ.get('CLOUDINARY_API_KEY'),
+  api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+)
+
+# Cloudinary Configuration
+cloudinary.config(
+  cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
+  api_key = os.environ.get('CLOUDINARY_API_KEY'),
+  api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+)
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -100,7 +116,9 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     name: str
-    role: str = "user"  # "admin" or "user"
+    role: str = "user"  # "superadmin", "admin" or "user"
+    plan: str = "free"  # "free" or "pro"
+    slug: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_login: Optional[datetime] = None
 
@@ -118,12 +136,19 @@ class UserResponse(BaseModel):
     email: str
     name: str
     role: str
+    plan: str = "free"
+    slug: Optional[str] = None
     created_at: datetime
     last_login: Optional[datetime] = None
 
 class AuthResponse(BaseModel):
     user: UserResponse
     token: str
+
+class UserAdminUpdate(BaseModel):
+    role: Optional[str] = None
+    plan: Optional[str] = None
+    name: Optional[str] = None
 
 class PasswordResetToken(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -870,9 +895,15 @@ class PricingPlan(BaseModel):
     price: float
     currency: str = "CHF"
     interval: str = "month"  # month, year
+    description_fr: str = ""
+    description_en: str = ""
+    description_de: str = ""
     features_fr: List[str] = []
     features_en: List[str] = []
     features_de: List[str] = []
+    cta_fr: str = "Souscrire"
+    cta_en: str = "Subscribe"
+    cta_de: str = "Abonnieren"
     limits: Dict = {
         "emails_per_month": 0,
         "whatsapp_per_month": 0,
@@ -893,9 +924,15 @@ class PricingPlanCreate(BaseModel):
     price: float
     currency: str = "CHF"
     interval: str = "month"
+    description_fr: str = ""
+    description_en: str = ""
+    description_de: str = ""
     features_fr: List[str] = []
     features_en: List[str] = []
     features_de: List[str] = []
+    cta_fr: str = "Souscrire"
+    cta_en: str = "Subscribe"
+    cta_de: str = "Abonnieren"
     limits: Dict = {}
     active: bool = True
     highlighted: bool = False
@@ -908,9 +945,15 @@ class PricingPlanUpdate(BaseModel):
     price: Optional[float] = None
     currency: Optional[str] = None
     interval: Optional[str] = None
+    description_fr: Optional[str] = None
+    description_en: Optional[str] = None
+    description_de: Optional[str] = None
     features_fr: Optional[List[str]] = None
     features_en: Optional[List[str]] = None
     features_de: Optional[List[str]] = None
+    cta_fr: Optional[str] = None
+    cta_en: Optional[str] = None
+    cta_de: Optional[str] = None
     limits: Optional[Dict] = None
     active: Optional[bool] = None
     highlighted: Optional[bool] = None
@@ -1165,6 +1208,7 @@ class AdChat(BaseModel):
     """Chat conversation from advertisement"""
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str  # Owner of the chat (the coach/account)
     
     # Ad source
     ad_id: str  # ID of the ad that generated this chat
@@ -1208,6 +1252,7 @@ class AdChatStart(BaseModel):
     visitor_email: Optional[EmailStr] = None
     visitor_phone: Optional[str] = None
     initial_message: str
+    user_id: Optional[str] = None  # Target user/coach ID
 
 class AdChatMessageCreate(BaseModel):
     sender: str  # visitor or agent
@@ -1354,40 +1399,57 @@ def generate_slug(title: str) -> str:
 # ========================
 
 async def get_settings(user_id: str = None):
-    """Get admin settings from database - per user"""
+    """Get settings from database, with fallback to environment variables for sensitive keys"""
     if not user_id:
-        raise ValueError("user_id is required to fetch settings")
-    
+        # Try to find the first admin user's settings as "master" settings
+        admin = await db.users.find_one({"role": "admin"})
+        if admin:
+            user_id = admin["id"]
+        else:
+            # Absolute fallback if no admin exists yet
+            user_id = "global_settings"
+
     settings = await db.settings.find_one({"user_id": user_id}, {"_id": 0})
     if not settings:
-        # Create default settings for this user
-        default_settings = AdminSettings(
-            user_id=user_id,
-            openai_api_key='',
-            resend_api_key='',
-            sender_email=None,
-            sender_name=None
-        )
-        doc = default_settings.model_dump()
-        doc['updated_at'] = doc['updated_at'].isoformat()
-        await db.settings.insert_one(doc)
-        return default_settings
-    
+        settings = {"user_id": user_id}
+
+    # Ensure sensitive keys fallback to environment variables
+    sensitive_keys = {
+        'openai_api_key': 'OPENAI_API_KEY',
+        'resend_api_key': 'RESEND_API_KEY',
+        'whatsapp_access_token': 'WHATSAPP_ACCESS_TOKEN',
+        'whatsapp_phone_number_id': 'WHATSAPP_PHONE_NUMBER_ID',
+        'whatsapp_verify_token': 'WHATSAPP_VERIFY_TOKEN',
+        'stripe_publishable_key': 'STRIPE_PUBLISHABLE_KEY',
+        'stripe_secret_key': 'STRIPE_SECRET_KEY'
+    }
+
+    for key, env_var in sensitive_keys.items():
+        if not settings.get(key):
+            settings[key] = os.environ.get(env_var, '')
+
     if isinstance(settings.get('updated_at'), str):
         settings['updated_at'] = datetime.fromisoformat(settings['updated_at'])
+    elif 'updated_at' not in settings:
+        settings['updated_at'] = datetime.now(timezone.utc)
+
     return AdminSettings(**settings)
 
-def get_openai_client(api_key: str):
-    """Create OpenAI client with API key"""
-    if not api_key:
+def get_openai_client(api_key: str = None):
+    """Create OpenAI client with API key, fallback to env master key"""
+    # Priority: DB settings > .env master key
+    key = api_key or os.environ.get('OPENAI_API_KEY')
+    if not key:
         raise HTTPException(status_code=400, detail="OpenAI API key not configured")
-    return OpenAI(api_key=api_key)
+    return OpenAI(api_key=key)
 
-def get_resend_client(api_key: str):
-    """Configure Resend with API key"""
-    if not api_key:
+def get_resend_client(api_key: str = None):
+    """Configure Resend with API key, fallback to env master key"""
+    # Priority: DB settings > .env master key
+    key = api_key or os.environ.get('RESEND_API_KEY')
+    if not key:
         raise HTTPException(status_code=400, detail="Resend API key not configured")
-    resend.api_key = api_key
+    resend.api_key = key
 
 async def get_contacts_by_filters(groups: List[str] = None, tags: List[str] = None, active_only: bool = True, user_id: str = None):
     """Get contacts filtered by groups, tags and user_id"""
@@ -1463,10 +1525,60 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     
     return user
 
+async def get_current_user_optional(request: Request) -> Optional[Dict]:
+    """Optional authentication for mixed content routes"""
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Bearer "):
+        return None
+    
+    try:
+        token = auth.split(" ")[1]
+        payload = decode_token(token)
+        user = await db.users.find_one({"id": payload["user_id"]}, {"_id": 0, "password": 0})
+        return user
+    except Exception:
+        return None
+
 async def require_admin(current_user: Dict = Depends(get_current_user)) -> Dict:
-    """Require admin role"""
-    if current_user.get("role") != "admin":
+    """Require admin or superadmin role"""
+    if current_user.get("role") not in ["admin", "superadmin"]:
         raise HTTPException(status_code=403, detail="Admin access required")
+    return current_user
+
+async def require_superadmin(current_user: Dict = Depends(get_current_user)) -> Dict:
+    """Require superadmin role"""
+    if current_user.get("role") != "superadmin":
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+    return current_user
+
+async def check_ai_quota(current_user: Dict = Depends(get_current_user)):
+    """Check AI usage quota for the user"""
+    user_id = current_user["id"]
+    # Determine limit based on plan or role
+    # Admin/SuperAdmin always Pro, otherwise check plan field
+    is_pro = current_user.get("plan") == "pro" or current_user.get("role") in ["admin", "superadmin"]
+    limit = 100 if is_pro else 5
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Check and increment count atomically
+    quota = await db.ai_quotas.find_one_and_update(
+        {"user_id": user_id, "date": today},
+        {"$inc": {"count": 1}},
+        upsert=True,
+        return_document=True
+    )
+    
+    # If the quote didn't exist, count will be 1 (because of $inc)
+    # If it existed, count will be new count
+    if quota["count"] > limit:
+        # If already exceeded, we should decrement it back? 
+        # Actually usually it's fine to just block.
+        raise HTTPException(
+            status_code=429, 
+            detail=f"Daily AI quota reached ({limit} requests/day). Please upgrade to Pro for more."
+        )
+    
     return current_user
 
 
@@ -1484,13 +1596,15 @@ async def register(user_data: UserCreate):
     
     # Check if this is the first user
     user_count = await db.users.count_documents({})
-    role = "admin" if user_count == 0 else "user"
+    role = "superadmin" if user_count == 0 else "user"
     
     # Create user
     user = User(
         email=user_data.email,
         name=user_data.name,
-        role=role
+        role=role,
+        slug=generate_slug(user_data.name),
+        plan="pro" if role in ["admin", "superadmin"] else "free"
     )
     
     # Hash password and store separately
@@ -1518,6 +1632,9 @@ async def login(credentials: UserLogin):
             raise HTTPException(status_code=401, detail="Invalid email or password")
         
         logger.info(f"Login attempt for user: {credentials.email}, role: {user.get('role', 'N/A')}")
+        
+        if user.get("role") == "banned":
+            raise HTTPException(status_code=403, detail="Votre compte a été banni. Veuillez contacter le support.")
     except HTTPException:
         raise
     except Exception as e:
@@ -1529,14 +1646,31 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
     # Ensure role exists, default to 'user' if missing
-    user_role = user.get("role", "user")
-    if not user_role:
-        user_role = "user"
-        # Update user in database if role is missing
+    user_role = user.get("role", "user") or "user"
+    user_plan = user.get("plan")
+    
+    if not user_plan:
+        user_plan = "pro" if user_role in ["admin", "superadmin"] else "free"
+        # Update user in database if field is missing
         await db.users.update_one(
             {"email": credentials.email},
-            {"$set": {"role": "user"}}
+            {"$set": {"role": user_role, "plan": user_plan}}
         )
+    elif not user.get("role"):
+        await db.users.update_one(
+            {"email": credentials.email},
+            {"$set": {"role": user_role}}
+        )
+    
+    # Ensure user has a slug
+    user_slug = user.get("slug")
+    if not user_slug:
+        user_slug = generate_slug(user.get("name", "coach"))
+        await db.users.update_one(
+            {"email": credentials.email},
+            {"$set": {"slug": user_slug}}
+        )
+        user["slug"] = user_slug
     
     # Update last login
     await db.users.update_one(
@@ -1568,6 +1702,24 @@ async def login(credentials: UserLogin):
     
     return AuthResponse(user=user_response, token=token)
 
+@api_router.get("/coach/slug/{slug}", response_model=UserResponse)
+async def get_coach_by_slug(slug: str):
+    """Get coach information by public slug"""
+    coach = await db.users.find_one({"slug": slug})
+    if not coach:
+        # Try to find by ID if slug not found (fallback)
+        coach = await db.users.find_one({"id": slug})
+        if not coach:
+            raise HTTPException(status_code=404, detail="Coach not found")
+            
+    # Remove sensitive data
+    if "_id" in coach:
+        del coach["_id"]
+    if "password" in coach:
+        del coach["password"]
+        
+    return UserResponse(**coach)
+
 @api_router.get("/auth/me", response_model=UserResponse)
 async def get_me(current_user: Dict = Depends(get_current_user)):
     """Get current user info"""
@@ -1581,13 +1733,76 @@ async def get_me(current_user: Dict = Depends(get_current_user)):
 
 
 # ========================
+# ROUTES - USER MANAGEMENT (SUPERADMIN)
+# ========================
+
+@api_router.get("/admin/users", response_model=List[UserResponse])
+async def list_users(current_user: Dict = Depends(require_superadmin)):
+    """List all users in the system"""
+    users = await db.users.find({}, {"_id": 0, "password": 0}).to_list(1000)
+    # Parse dates
+    for user in users:
+        if isinstance(user.get('created_at'), str):
+            user['created_at'] = datetime.fromisoformat(user['created_at'])
+        if isinstance(user.get('last_login'), str):
+            user['last_login'] = datetime.fromisoformat(user['last_login'])
+    return users
+
+@api_router.put("/admin/users/{user_id}", response_model=UserResponse)
+async def update_user_admin(user_id: str, update: UserAdminUpdate, current_user: Dict = Depends(require_superadmin)):
+    """Update user role or plan"""
+    user = await db.users.find_one({"id": user_id})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    update_data = update.model_dump(exclude_unset=True)
+    await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    updated_user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if isinstance(updated_user.get('created_at'), str):
+        updated_user['created_at'] = datetime.fromisoformat(updated_user['created_at'])
+    if isinstance(updated_user.get('last_login'), str):
+        updated_user['last_login'] = datetime.fromisoformat(updated_user['last_login'])
+    return updated_user
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user_admin(user_id: str, current_user: Dict = Depends(require_superadmin)):
+    """Delete a user account"""
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Also delete their settings
+    await db.settings.delete_one({"user_id": user_id})
+    
+    return {"message": "User deleted successfully"}
+
+
+# ========================
 # ROUTES - SETTINGS
 # ========================
 
 @api_router.get("/settings", response_model=AdminSettings)
 async def get_admin_settings(current_user: Dict = Depends(get_current_user)):
     """Get admin settings for the current user"""
-    return await get_settings(user_id=current_user["id"])
+    settings = await get_settings(user_id=current_user["id"])
+    
+    # Mask sensitive keys for non-admins to prevent them from seeing/configuring master keys
+    if current_user.get("role") not in ["admin", "superadmin"]:
+        sensitive_keys = [
+            'openai_api_key', 'resend_api_key', 'whatsapp_access_token',
+            'whatsapp_phone_number_id', 'whatsapp_verify_token',
+            'stripe_publishable_key', 'stripe_secret_key'
+        ]
+        for key in sensitive_keys:
+            val = getattr(settings, key)
+            if val:
+                setattr(settings, key, "********")
+                
+    return settings
 
 @api_router.put("/settings", response_model=AdminSettings)
 async def update_admin_settings(settings_update: AdminSettingsUpdate, current_user: Dict = Depends(get_current_user)):
@@ -1595,6 +1810,16 @@ async def update_admin_settings(settings_update: AdminSettingsUpdate, current_us
     current_settings = await get_settings(user_id=current_user["id"])
     update_data = settings_update.model_dump(exclude_unset=True)
     
+    # Prevent non-admins from updating sensitive keys
+    if current_user.get("role") not in ["admin", "superadmin"]:
+        sensitive_keys = [
+            'openai_api_key', 'resend_api_key', 'whatsapp_access_token',
+            'whatsapp_phone_number_id', 'whatsapp_verify_token',
+            'stripe_publishable_key', 'stripe_secret_key'
+        ]
+        for key in sensitive_keys:
+            update_data.pop(key, None)
+            
     for key, value in update_data.items():
         setattr(current_settings, key, value)
     
@@ -2936,7 +3161,7 @@ async def get_campaign_analytics(current_user: Dict = Depends(get_current_user))
 # ========================
 
 @api_router.post("/ai/generate", response_model=AIGenerateResponse)
-async def generate_ai_content(request: AIGenerateRequest, current_user: Dict = Depends(get_current_user)):
+async def generate_ai_content(request: AIGenerateRequest, current_user: Dict = Depends(check_ai_quota)):
     """Generate email content using AI"""
     settings = await get_settings(user_id=current_user["id"])
     
@@ -3390,10 +3615,10 @@ async def update_whatsapp_message_status(status: Dict):
 # ========================
 
 @api_router.post("/ai/conversation", response_model=AIConversationResponse)
-async def ai_conversation(request: AIConversationRequest):
+async def chat_with_ai(request: AIConversationRequest, current_user: Dict = Depends(check_ai_quota)):
     """AI conversational response with memory"""
     try:
-        settings = await get_settings()
+        settings = await get_settings(user_id=current_user["id"])
         client = get_openai_client(settings.openai_api_key)
         
         # Add user message to memory
@@ -3880,7 +4105,7 @@ async def clear_conversation_history(contact_id: str):
 @api_router.post("/ai/assistant/chat", response_model=AIAssistantResponse)
 async def ai_assistant_chat(
     request: AIAssistantRequest,
-    current_user: Dict = Depends(get_current_user)
+    current_user: Dict = Depends(check_ai_quota)
 ):
     """AI Assistant chat - omnipresent helper for users"""
     try:
@@ -4849,7 +5074,7 @@ async def get_pricing_plan(plan_id: str):
     return plan
 
 @api_router.post("/pricing-plans", response_model=PricingPlan)
-async def create_pricing_plan(plan_data: PricingPlanCreate):
+async def create_pricing_plan(plan_data: PricingPlanCreate, current_user: Dict = Depends(require_superadmin)):
     """Create a new pricing plan"""
     plan = PricingPlan(**plan_data.model_dump())
     
@@ -4860,7 +5085,7 @@ async def create_pricing_plan(plan_data: PricingPlanCreate):
     return plan
 
 @api_router.put("/pricing-plans/{plan_id}", response_model=PricingPlan)
-async def update_pricing_plan(plan_id: str, plan_update: PricingPlanUpdate):
+async def update_pricing_plan(plan_id: str, plan_update: PricingPlanUpdate, current_user: Dict = Depends(require_superadmin)):
     """Update a pricing plan"""
     plan = await db.pricing_plans.find_one({"id": plan_id}, {"_id": 0})
     if not plan:
@@ -4882,7 +5107,7 @@ async def update_pricing_plan(plan_id: str, plan_update: PricingPlanUpdate):
     return plan_obj
 
 @api_router.delete("/pricing-plans/{plan_id}")
-async def delete_pricing_plan(plan_id: str):
+async def delete_pricing_plan(plan_id: str, current_user: Dict = Depends(require_superadmin)):
     """Delete a pricing plan"""
     result = await db.pricing_plans.delete_one({"id": plan_id})
     if result.deleted_count == 0:
@@ -4890,13 +5115,8 @@ async def delete_pricing_plan(plan_id: str):
     return {"message": "Pricing plan deleted successfully"}
 
 @api_router.post("/pricing-plans/initialize")
-async def initialize_default_plans():
-    """Initialize default pricing plans (run once)"""
-    # Check if plans already exist
-    existing = await db.pricing_plans.count_documents({})
-    if existing > 0:
-        raise HTTPException(status_code=400, detail="Pricing plans already initialized")
-    
+async def initialize_default_plans(current_user: Dict = Depends(require_superadmin)):
+    """Initialize default pricing plans (run once or as reset)"""
     default_plans = [
         PricingPlan(
             name="Starter",
@@ -4905,6 +5125,9 @@ async def initialize_default_plans():
             price=0,
             currency="CHF",
             interval="month",
+            description_fr="Pour découvrir la plateforme",
+            description_en="To discover the platform",
+            description_de="Um die Plattform zu entdecken",
             features_fr=[
                 "Jusqu'à 100 emails/mois",
                 "1 utilisateur",
@@ -4926,14 +5149,13 @@ async def initialize_default_plans():
             limits={
                 "emails_per_month": 100,
                 "whatsapp_per_month": 0,
-                "contacts_max": 500,
-                "ai_enabled": False,
-                "whatsapp_enabled": False,
-                "multi_user": False
+                "contacts_max": 100,
+                "ai_enabled": False
             },
-            active=True,
-            highlighted=False,
-            order=1
+            cta_fr="Essayer maintenant",
+            cta_en="Try now",
+            cta_de="Jetzt versuchen",
+            order=0
         ),
         PricingPlan(
             name="Pro Coach",
@@ -4942,38 +5164,41 @@ async def initialize_default_plans():
             price=49,
             currency="CHF",
             interval="month",
+            description_fr="Pour les coachs et formateurs",
+            description_en="For coaches and trainers",
+            description_de="Für Trainer und Coaches",
             features_fr=[
                 "Jusqu'à 5000 emails/mois",
-                "IA Afroboost intégrée",
+                "IA BoostTribe intégrée",
                 "Relances automatiques",
                 "Tableau de bord complet",
                 "Support prioritaire"
             ],
             features_en=[
                 "Up to 5000 emails/month",
-                "Afroboost AI integrated",
+                "BoostTribe AI integrated",
                 "Automatic follow-ups",
                 "Complete dashboard",
                 "Priority support"
             ],
             features_de=[
                 "Bis zu 5000 E-Mails/Monat",
-                "Afroboost KI integriert",
-                "Automatische Nachverfolgung",
+                "BoostTribe KI integriert",
+                "Automatische Follow-ups",
                 "Vollständiges Dashboard",
-                "Prioritätssupport"
+                "Priorisierter Support"
             ],
             limits={
                 "emails_per_month": 5000,
-                "whatsapp_per_month": 1000,
-                "contacts_max": 10000,
-                "ai_enabled": True,
-                "whatsapp_enabled": True,
-                "multi_user": False
+                "whatsapp_per_month": 100,
+                "contacts_max": 2000,
+                "ai_enabled": True
             },
-            active=True,
+            cta_fr="Souscrire",
+            cta_en="Subscribe",
+            cta_de="Abonnieren",
             highlighted=True,
-            order=2
+            order=1
         ),
         PricingPlan(
             name="Business",
@@ -4982,6 +5207,9 @@ async def initialize_default_plans():
             price=149,
             currency="CHF",
             interval="month",
+            description_fr="Pour les entreprises",
+            description_en="For businesses",
+            description_de="Für Unternehmen",
             features_fr=[
                 "Emails illimités",
                 "Multi-utilisateurs",
@@ -5000,25 +5228,29 @@ async def initialize_default_plans():
             ],
             features_de=[
                 "Unbegrenzte E-Mails",
-                "Multi-Benutzer-Zugriff",
-                "Erweiterte KI",
+                "Mehrbenutzer-Zugriff",
+                "Fortgeschrittene KI",
                 "WhatsApp-Integration",
-                "Individuelles Branding",
-                "24/7 dedizierter Support"
+                "Benutzerdefiniertes Branding",
+                "Engagierter 24/7-Support"
             ],
             limits={
-                "emails_per_month": -1,  # -1 = unlimited
+                "emails_per_month": -1,
                 "whatsapp_per_month": -1,
                 "contacts_max": -1,
                 "ai_enabled": True,
                 "whatsapp_enabled": True,
                 "multi_user": True
             },
-            active=True,
-            highlighted=False,
-            order=3
+            cta_fr="Souscrire",
+            cta_en="Subscribe",
+            cta_de="Abonnieren",
+            order=2
         )
     ]
+    
+    # Remove existing plans to allow "reset" if many changes were made
+    await db.pricing_plans.delete_many({})
     
     for plan in default_plans:
         doc = plan.model_dump()
@@ -5885,7 +6117,7 @@ async def complete_referral(
 # ========================
 
 @api_router.post("/ad-chat/start", response_model=AdChat)
-async def start_ad_chat(chat_start: AdChatStart):
+async def start_ad_chat(chat_start: AdChatStart, current_user: Optional[Dict] = Depends(get_current_user_optional)):
     """Start a new chat conversation from an advertisement (public endpoint with AI)"""
     try:
         # Create initial message from visitor
@@ -5923,6 +6155,7 @@ async def start_ad_chat(chat_start: AdChatStart):
         # Create chat session
         new_chat = AdChat(
             ad_id=chat_start.ad_id,
+            user_id=chat_start.user_id or (current_user["id"] if current_user else None),
             ad_platform=chat_start.ad_platform,
             ad_campaign_name=chat_start.ad_campaign_name,
             visitor_name=chat_start.visitor_name,
@@ -5931,6 +6164,9 @@ async def start_ad_chat(chat_start: AdChatStart):
             messages=messages,
             priority="high" if needs_escalation else "normal"
         )
+        
+        if not new_chat.user_id:
+            raise HTTPException(status_code=400, detail="user_id is required either in payload or via authentication")
         
         chat_dict = new_chat.dict()
         chat_dict['created_at'] = chat_dict['created_at'].isoformat()
@@ -5948,10 +6184,77 @@ async def start_ad_chat(chat_start: AdChatStart):
         logger.error(f"Error starting ad chat: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/ad-chat/public", response_model=AdChat)
+async def start_public_ad_chat(data: Dict):
+    """Start a chat from a public profile page (or return existing chat)"""
+    try:
+        user_id = data.get("user_id")
+        visitor_email = data.get("visitor_email")
+        
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        
+        # Check for existing chat with this email for this coach
+        if visitor_email:
+            existing_chat = await db.ad_chats.find_one({
+                "user_id": user_id,
+                "visitor_email": visitor_email
+            }, {"_id": 0})
+            
+            if existing_chat:
+                # Add the new message to existing chat if provided
+                initial_message = ""
+                if data.get("messages") and len(data.get("messages")) > 0:
+                    initial_message = data["messages"][0].get("content", "")
+                
+                if initial_message:
+                    new_message = AdChatMessage(
+                        sender="visitor",
+                        content=initial_message
+                    )
+                    message_dict = new_message.dict()
+                    message_dict['timestamp'] = message_dict['timestamp'].isoformat()
+                    
+                    await db.ad_chats.update_one(
+                        {"id": existing_chat["id"]},
+                        {
+                            "$push": {"messages": message_dict},
+                            "$set": {"last_message_at": datetime.now(timezone.utc).isoformat()}
+                        }
+                    )
+                    
+                    # Return updated chat
+                    updated_chat = await db.ad_chats.find_one({"id": existing_chat["id"]}, {"_id": 0})
+                    return updated_chat
+                
+                return existing_chat
+            
+        # No existing chat, create new one
+        initial_message = ""
+        if data.get("messages") and len(data.get("messages")) > 0:
+            initial_message = data["messages"][0].get("content", "")
+            
+        chat_start = AdChatStart(
+            ad_id=f"public-page-{user_id}",
+            ad_platform=data.get("ad_platform", "public_page"),
+            ad_campaign_name="Public Profile Chat",
+            visitor_name=data.get("visitor_name"),
+            visitor_email=visitor_email,
+            visitor_phone=data.get("visitor_phone"),
+            initial_message=initial_message,
+            user_id=user_id
+        )
+        
+        return await start_ad_chat(chat_start)
+    except Exception as e:
+        logger.error(f"Error starting public ad chat: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/ad-chat/{chat_id}/message", response_model=AdChat)
 async def send_ad_chat_message(
     chat_id: str,
-    message: AdChatMessageCreate
+    message: AdChatMessageCreate,
+    current_user: Optional[Dict] = Depends(get_current_user_optional)
 ):
     """Send a message in an ad chat (public/agent endpoint with AI auto-response)"""
     try:
@@ -5959,6 +6262,13 @@ async def send_ad_chat_message(
         chat = await db.ad_chats.find_one({"id": chat_id}, {"_id": 0})
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
+            
+        # Security: If agent is sending, they must own the chat or be superadmin
+        if message.sender == "agent":
+            if not current_user:
+                raise HTTPException(status_code=401, detail="Authentication required for agent messages")
+            if current_user["id"] != chat.get("user_id") and current_user.get("role") != "superadmin":
+                raise HTTPException(status_code=403, detail="You do not have access to this chat")
         
         # Create new message
         new_message = AdChatMessage(
@@ -6024,6 +6334,9 @@ async def get_ad_chats(
     """Get all ad chats (admin/agent only)"""
     try:
         query = {}
+        if not current_user.get("role") == "superadmin":
+            query['user_id'] = current_user["id"]
+        
         if status:
             query['status'] = status
         
@@ -6033,14 +6346,20 @@ async def get_ad_chats(
         logger.error(f"Error fetching ad chats: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @api_router.get("/ad-chat/{chat_id}", response_model=AdChat)
 async def get_ad_chat(
     chat_id: str,
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[Dict] = Depends(get_current_user_optional)
 ):
-    """Get specific ad chat by ID"""
+    """Get specific ad chat by ID (accessible to visitors for polling)"""
     try:
-        chat = await db.ad_chats.find_one({"id": chat_id}, {"_id": 0})
+        query = {"id": chat_id}
+        # If authenticated, enforce ownership (except superadmin)
+        if current_user and current_user.get("role") != "superadmin":
+            query["user_id"] = current_user["id"]
+            
+        chat = await db.ad_chats.find_one(query, {"_id": 0})
         if not chat:
             raise HTTPException(status_code=404, detail="Chat not found")
         return chat
@@ -6094,13 +6413,23 @@ async def convert_ad_chat_to_contact(
         if not chat.get('visitor_email'):
             raise HTTPException(status_code=400, detail="Visitor email required for conversion")
         
-        # Check if contact already exists
-        existing_contact = await db.contacts.find_one({"email": chat['visitor_email']})
+        # Check if contact already exists for this specific coach
+        coach_id = chat.get('user_id')
+        if not coach_id:
+            # Fallback to current user if chat doesn't have user_id (unlikely for ad/public chats)
+            coach_id = current_user.get('user_id') or current_user.get('id')
+
+        existing_contact = await db.contacts.find_one({
+            "email": chat['visitor_email'],
+            "user_id": coach_id
+        })
+        
         if existing_contact:
             contact_id = existing_contact['id']
         else:
             # Create new contact
             new_contact = Contact(
+                user_id=coach_id,
                 name=chat.get('visitor_name', 'Ad Lead'),
                 email=chat['visitor_email'],
                 phone=chat.get('visitor_phone'),
@@ -6733,6 +7062,22 @@ async def update_attendance(
 
 
 
+
+# Upload Image Endpoint
+@api_router.post("/upload-image")
+def upload_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
+    """Upload an image to Cloudinary"""
+    try:
+        # Read the file
+        contents = file.file.read()
+        
+        # Upload to Cloudinary
+        result = cloudinary.uploader.upload(contents, folder="boosttribe")
+        
+        return {"url": result.get("secure_url")}
+    except Exception as e:
+        logger.error(f"Error uploading image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Image upload failed: {str(e)}")
 
 app.include_router(api_router)
 

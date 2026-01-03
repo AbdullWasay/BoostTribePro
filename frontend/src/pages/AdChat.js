@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { MessageCircle, Send, UserCheck, Star, ArrowLeft, Share2, Copy, Users } from 'lucide-react';
 import axios from 'axios';
 
@@ -13,9 +13,8 @@ const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 const AdChat = () => {
   const { user, token } = useAuth();
-  const { toast } = useToast();
-  const { t } = useTranslation();
-  
+  const { t, i18n } = useTranslation();
+
   const [chats, setChats] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -24,35 +23,44 @@ const AdChat = () => {
   const [loading, setLoading] = useState(false);
   const [showMobileChat, setShowMobileChat] = useState(false);
 
+  // Check if selected chat visitor is already in contacts
+  const isAlreadyContact = React.useMemo(() => {
+    if (!selectedChat || (!selectedChat.visitor_email && !selectedChat.visitor_phone)) return false;
+    return contacts.some(c =>
+      (selectedChat.visitor_email && c.email?.toLowerCase() === selectedChat.visitor_email.toLowerCase()) ||
+      (selectedChat.visitor_phone && c.phone === selectedChat.visitor_phone)
+    );
+  }, [selectedChat, contacts]);
+
   // Group contacts by subscription status
   const subscriptionGroups = [
-    { 
-      id: 'all', 
-      name: t('contacts.allStatuses', { defaultValue: t('contacts.allGroups', { defaultValue: 'All' }) }), 
+    {
+      id: 'all',
+      name: t('contacts.allStatuses', { defaultValue: t('contacts.allGroups', { defaultValue: 'All' }) }),
       count: contacts.length,
       status: 'all'
     },
-    { 
-      id: 'active', 
-      name: t('contacts.subscriptionStatusOptions.active'), 
+    {
+      id: 'active',
+      name: t('contacts.subscriptionStatusOptions.active'),
       count: contacts.filter(c => c.subscription_status === 'active').length,
       status: 'active'
     },
-    { 
-      id: 'trial', 
-      name: t('contacts.subscriptionStatusOptions.trial'), 
+    {
+      id: 'trial',
+      name: t('contacts.subscriptionStatusOptions.trial'),
       count: contacts.filter(c => c.subscription_status === 'trial').length,
       status: 'trial'
     },
-    { 
-      id: 'expired', 
-      name: t('contacts.subscriptionStatusOptions.expired'), 
+    {
+      id: 'expired',
+      name: t('contacts.subscriptionStatusOptions.expired'),
       count: contacts.filter(c => c.subscription_status === 'expired' || !c.active).length,
       status: 'expired'
     },
-    { 
-      id: 'non-subscriber', 
-      name: t('contacts.subscriptionStatusOptions.nonSubscriber'), 
+    {
+      id: 'non-subscriber',
+      name: t('contacts.subscriptionStatusOptions.nonSubscriber'),
       count: contacts.filter(c => c.subscription_status === 'non-subscriber').length,
       status: 'non-subscriber'
     }
@@ -62,8 +70,8 @@ const AdChat = () => {
   const filteredContacts = selectedSubscriptionStatus === 'all'
     ? contacts
     : selectedSubscriptionStatus === 'expired'
-    ? contacts.filter(c => c.subscription_status === 'expired' || !c.active)
-    : contacts.filter(c => c.subscription_status === selectedSubscriptionStatus);
+      ? contacts.filter(c => c.subscription_status === 'expired' || !c.active)
+      : contacts.filter(c => c.subscription_status === selectedSubscriptionStatus);
 
   useEffect(() => {
     fetchChats();
@@ -114,28 +122,28 @@ const AdChat = () => {
     console.log('Contact email:', contact.email);
     console.log('Contact name:', contact.name);
     console.log('Contact phone:', contact.phone);
-    
+
     try {
       setLoading(true);
-      
+
       // First refresh chats to get the latest list and use the returned value
       const currentChats = await fetchChats();
       console.log('All current chats:', currentChats);
       console.log('Current chats count:', currentChats.length);
-      
+
       // Check if there's an existing chat with this contact (by email ONLY, must match exactly)
       const existingChat = currentChats.find(chat => {
         // Must have both emails to compare
         if (!contact.email || !chat.visitor_email) {
           return false;
         }
-        
+
         const contactEmail = contact.email.toLowerCase().trim();
         const chatEmail = chat.visitor_email.toLowerCase().trim();
         const emailMatch = contactEmail === chatEmail;
-        
+
         console.log(`Comparing emails: "${contactEmail}" === "${chatEmail}" => ${emailMatch}`);
-        
+
         return emailMatch;
       });
 
@@ -152,23 +160,16 @@ const AdChat = () => {
         // Load existing chat - double check email matches
         console.log('Loading existing chat:', existingChat.id);
         await loadChatDetails(existingChat.id);
-        toast({
-          title: '✅ Chat trouvé',
-          description: `Conversation avec ${contact.name || contact.email} chargée`
-        });
+        toast.success(t('adChat.chatLoaded', { defaultValue: `Conversation avec ${contact.name || contact.email} chargée` }));
       } else {
         // Create new chat - no existing chat found for this email
         console.log('No existing chat found. Creating new chat for contact:', contact.email);
-        
+
         if (!contact.email) {
-          toast({
-            title: '❌ Erreur',
-            description: 'Le contact doit avoir une adresse email pour démarrer un chat',
-            variant: 'destructive'
-          });
+          toast.error(t('adChat.emailRequired', { defaultValue: 'Le contact doit avoir une adresse email pour démarrer un chat' }));
           return;
         }
-        
+
         const chatData = {
           ad_id: `contact-chat-${contact.id}-${Date.now()}`,
           ad_platform: 'contact',
@@ -177,41 +178,34 @@ const AdChat = () => {
           visitor_email: contact.email.trim(),
           initial_message: 'Chat démarré depuis les contacts'
         };
-        
+
         // Only include phone if it exists and is not empty
         if (contact.phone && contact.phone.trim()) {
           chatData.visitor_phone = contact.phone.trim();
         }
-        
+
         console.log('Sending chat creation request:', chatData);
-        
+
         const response = await axios.post(
           `${API_URL}/api/ad-chat/start`,
-          chatData
+          chatData,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        
+
         console.log('Chat created response:', response.data);
-        
+
         const newChat = response.data;
         setSelectedChat(newChat);
         setShowMobileChat(true);
-        
+
         // Refresh chats list to include the new chat
         await fetchChats();
-        
-        toast({
-          title: '✅ Chat créé',
-          description: `Nouvelle conversation avec ${contact.name || contact.email}`
-        });
+
+        toast.success(t('adChat.chatCreated', { defaultValue: `Nouvelle conversation avec ${contact.name || contact.email}` }));
       }
     } catch (error) {
       console.error('Error starting chat:', error);
-      console.error('Error response:', error.response?.data);
-      toast({
-        title: '❌ Erreur',
-        description: error.response?.data?.detail || error.message || 'Impossible de démarrer la conversation',
-        variant: 'destructive'
-      });
+      toast.error(error.response?.data?.detail || error.message || t('adChat.startError', { defaultValue: 'Impossible de démarrer la conversation' }));
     } finally {
       setLoading(false);
       console.log('=== handleContactClick END ===');
@@ -222,7 +216,7 @@ const AdChat = () => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!message.trim() || !selectedChat) return;
-    
+
     setLoading(true);
     try {
       const response = await axios.post(
@@ -233,7 +227,7 @@ const AdChat = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       setSelectedChat(response.data);
       setMessage('');
       setChats(chats.map(c => c.id === selectedChat.id ? response.data : c));
@@ -245,12 +239,45 @@ const AdChat = () => {
   };
 
   const copyPublicLink = () => {
-    const link = `${window.location.origin}/chat-public/${user?.id}`;
-    navigator.clipboard.writeText(link);
-    toast({
-      title: t('adChat.linkCopied'),
-      description: t('adChat.linkCopiedDesc')
-    });
+    try {
+      const link = `${window.location.origin}/chat/${user?.slug || user?.id}`;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      toast.success(t('adChat.linkCopiedDesc'));
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast.error('Failed to copy link');
+    }
+  };
+
+  const handleConvertToContact = async () => {
+    if (!selectedChat) return;
+    setLoading(true);
+    try {
+      await axios.post(
+        `${API_URL}/api/ad-chat/${selectedChat.id}/convert`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(t('adChat.convertSuccess'));
+      // Refresh chats and selected chat
+      fetchChats();
+      fetchContacts();
+      loadChatDetails(selectedChat.id);
+    } catch (error) {
+      console.error('Error converting chat:', error);
+      toast.error(error.response?.data?.detail || t('adChat.convertError'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   // All chats are shown (not filtered by subscription status)
@@ -280,11 +307,10 @@ const AdChat = () => {
               <button
                 key={group.id}
                 onClick={() => setSelectedSubscriptionStatus(group.status)}
-                className={`w-full text-left p-3 rounded-lg transition-colors flex justify-between items-center ${
-                  selectedSubscriptionStatus === group.status 
-                    ? 'bg-primary text-white' 
-                    : 'bg-gray-800 hover:bg-gray-700'
-                }`}
+                className={`w-full text-left p-3 rounded-lg transition-colors flex justify-between items-center ${selectedSubscriptionStatus === group.status
+                  ? 'bg-primary text-white'
+                  : 'bg-gray-800 hover:bg-gray-700'
+                  }`}
               >
                 <span>{group.name}</span>
                 <Badge variant={selectedSubscriptionStatus === group.status ? 'secondary' : 'outline'}>
@@ -292,18 +318,18 @@ const AdChat = () => {
                 </Badge>
               </button>
             ))}
-            
+
             {/* Display filtered contacts list */}
             {filteredContacts.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-400 mb-2">{t('contacts.contacts')} ({filteredContacts.length})</p>
                 <div className="space-y-1 max-h-[calc(100vh-28rem)] overflow-y-auto">
                   {filteredContacts.slice(0, 50).map((contact) => {
-                    const hasExistingChat = chats.some(chat => 
+                    const hasExistingChat = chats.some(chat =>
                       chat.visitor_email?.toLowerCase() === contact.email?.toLowerCase() ||
                       chat.visitor_phone === contact.phone
                     );
-                    
+
                     return (
                       <div
                         key={contact.id}
@@ -322,12 +348,11 @@ const AdChat = () => {
                             <div className="text-xs text-gray-400 truncate">{contact.email}</div>
                           )}
                         </div>
-                        <MessageCircle 
-                          className={`h-4 w-4 ml-2 flex-shrink-0 ${
-                            hasExistingChat 
-                              ? 'text-primary' 
-                              : 'text-gray-500 group-hover:text-primary'
-                          }`} 
+                        <MessageCircle
+                          className={`h-4 w-4 ml-2 flex-shrink-0 ${hasExistingChat
+                            ? 'text-primary'
+                            : 'text-gray-500 group-hover:text-primary'
+                            }`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -365,11 +390,10 @@ const AdChat = () => {
                     <div
                       key={chat.id}
                       onClick={() => loadChatDetails(chat.id)}
-                      className={`p-4 rounded-lg cursor-pointer transition-all ${
-                        selectedChat?.id === chat.id
-                          ? 'bg-primary/20 border-primary border-2'
-                          : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
-                      }`}
+                      className={`p-4 rounded-lg cursor-pointer transition-all ${selectedChat?.id === chat.id
+                        ? 'bg-primary/20 border-primary border-2'
+                        : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
+                        }`}
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex items-center gap-2">
@@ -397,26 +421,39 @@ const AdChat = () => {
             <div className={`lg:col-span-3 ${showMobileChat ? 'block' : 'hidden lg:block'}`}>
               {selectedChat ? (
                 <>
-                  <CardHeader className="border-b">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                  <CardHeader className="border-b px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="lg:hidden"
+                          className="lg:hidden flex-shrink-0"
                           onClick={() => setShowMobileChat(false)}
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div>
-                          <CardTitle className="text-lg">{selectedChat.visitor_name || t('adChat.anonymousVisitor')}</CardTitle>
-                          <p className="text-sm text-gray-400">{selectedChat.visitor_email || t('adChat.emailNotProvided')}</p>
+                        <div className="min-w-0">
+                          <CardTitle className="text-lg truncate">{selectedChat.visitor_name || t('adChat.anonymousVisitor')}</CardTitle>
+                          <div className="flex flex-col gap-x-4 gap-y-1 lg:flex-row">
+                            <p className="text-sm text-gray-400 truncate">{selectedChat.visitor_email || t('adChat.emailNotProvided')}</p>
+                            {selectedChat.visitor_phone && (
+                              <p className="text-sm text-gray-400 truncate">{selectedChat.visitor_phone}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      <Badge>{selectedChat.status}</Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {!selectedChat.converted_to_contact && !isAlreadyContact && (
+                          <Button onClick={handleConvertToContact} variant="outline" size="sm" className="h-8" disabled={loading}>
+                            <UserCheck className="h-4 w-4 mr-1 sm:mr-2" />
+                            <span className="text-xs sm:text-sm">{t('adChat.convertToLead')}</span>
+                          </Button>
+                        )}
+                        <Badge variant="secondary" className="text-[10px] h-5 uppercase tracking-wider">{selectedChat.status}</Badge>
+                      </div>
                     </div>
                   </CardHeader>
-                  
+
                   <CardContent className="p-4">
                     {/* Messages */}
                     <div className="space-y-4 mb-4 max-h-[calc(100vh-24rem)] overflow-y-auto">
@@ -426,15 +463,14 @@ const AdChat = () => {
                           className={`flex ${msg.sender === 'visitor' ? 'justify-start' : 'justify-end'}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-lg ${
-                              msg.sender === 'visitor'
-                                ? 'bg-gray-800'
-                                : 'bg-primary text-white'
-                            }`}
+                            className={`max-w-[80%] p-3 rounded-lg ${msg.sender === 'visitor'
+                              ? 'bg-gray-800'
+                              : 'bg-primary text-white'
+                              }`}
                           >
                             <p className="text-sm">{msg.content}</p>
                             <p className="text-xs opacity-70 mt-1">
-                              {new Date(msg.timestamp).toLocaleString('fr-FR')}
+                              {new Date(msg.timestamp).toLocaleString(i18n.language)}
                             </p>
                           </div>
                         </div>

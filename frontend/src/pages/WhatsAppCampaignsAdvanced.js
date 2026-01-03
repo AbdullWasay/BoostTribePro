@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
-import { 
-  MessageCircle, Plus, Send, Sparkles, Edit, Trash2, 
+import {
+  MessageCircle, Plus, Send, Sparkles, Edit, Trash2,
   Calendar, Target, BarChart3, Image, Link as LinkIcon,
   Smile, Bold, Italic, ChevronDown, ChevronUp, ShoppingCart
 } from 'lucide-react';
@@ -30,7 +30,9 @@ import { useToast } from '@/hooks/use-toast';
 import EmojiPicker from 'emoji-picker-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+
 import ProductLinkSelector from '@/components/ProductLinkSelector';
+import ImageUploader from '@/components/ImageUploader';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -39,13 +41,13 @@ const WhatsAppCampaignsAdvanced = () => {
   const { token } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
-  
+
   // State management
   const [campaigns, setCampaigns] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Dialog states
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -53,7 +55,7 @@ const WhatsAppCampaignsAdvanced = () => {
   const [showAnalyticsDialog, setShowAnalyticsDialog] = useState(false);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [editingCampaign, setEditingCampaign] = useState(null);
-  
+
   // Form states
   const [campaignForm, setCampaignForm] = useState({
     title: '',
@@ -70,7 +72,7 @@ const WhatsAppCampaignsAdvanced = () => {
     scheduled_at: '',
     payment_links: []
   });
-  
+
   const [templateForm, setTemplateForm] = useState({
     name: '',
     category: 'marketing',
@@ -81,13 +83,13 @@ const WhatsAppCampaignsAdvanced = () => {
     media_url: '',
     media_type: null
   });
-  
+
   // Editor states
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showProductSelector, setShowProductSelector] = useState(false);
   const [showPreview, setShowPreview] = useState(true);
   const [analytics, setAnalytics] = useState(null);
-  
+
   // Button builder state
   const [currentButton, setCurrentButton] = useState({
     type: 'reply',
@@ -199,10 +201,10 @@ const WhatsAppCampaignsAdvanced = () => {
       phone_number: ''
     });
 
-      toast({
-        title: t('whatsappAdvanced.buttonAdded'),
-        description: t('whatsappAdvanced.buttonAddedDesc')
-      });
+    toast({
+      title: t('whatsappAdvanced.buttonAdded'),
+      description: t('whatsappAdvanced.buttonAddedDesc')
+    });
   };
 
   const removeButton = (index) => {
@@ -234,11 +236,11 @@ const WhatsAppCampaignsAdvanced = () => {
       }
     } catch (error) {
       console.error('Error creating campaign:', error);
-        toast({
-          title: t('whatsappAdvanced.errorCreating'),
-          description: t('whatsappAdvanced.errorCreatingDesc'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('whatsappAdvanced.errorCreating'),
+        description: t('whatsappAdvanced.errorCreatingDesc'),
+        variant: "destructive"
+      });
     }
   };
 
@@ -272,17 +274,17 @@ const WhatsAppCampaignsAdvanced = () => {
       }
     } catch (error) {
       console.error('Error updating campaign:', error);
-        toast({
-          title: t('whatsappAdvanced.errorUpdating'),
-          description: t('whatsappAdvanced.errorUpdatingDesc'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('whatsappAdvanced.errorUpdating'),
+        description: t('whatsappAdvanced.errorUpdatingDesc'),
+        variant: "destructive"
+      });
     }
   };
 
   const deleteCampaign = async (campaignId) => {
     if (!window.confirm(t('whatsappAdvanced.confirmDelete'))) return;
-    
+
     try {
       const response = await fetch(`${API}/whatsapp/advanced-campaigns/${campaignId}`, {
         method: 'DELETE',
@@ -307,11 +309,11 @@ const WhatsAppCampaignsAdvanced = () => {
       }
     } catch (error) {
       console.error('Error deleting campaign:', error);
-        toast({
-          title: t('whatsappAdvanced.errorDeleting'),
-          description: t('whatsappAdvanced.errorDeletingDesc'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('whatsappAdvanced.errorDeleting'),
+        description: t('whatsappAdvanced.errorDeletingDesc'),
+        variant: "destructive"
+      });
     }
   };
 
@@ -352,11 +354,11 @@ const WhatsAppCampaignsAdvanced = () => {
       }
     } catch (error) {
       console.error('Error sending campaign:', error);
-        toast({
-          title: t('whatsappAdvanced.errorSending'),
-          description: t('whatsappAdvanced.errorSendingDesc'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('whatsappAdvanced.errorSending'),
+        description: t('whatsappAdvanced.errorSendingDesc'),
+        variant: "destructive"
+      });
     }
   };
 
@@ -370,11 +372,11 @@ const WhatsAppCampaignsAdvanced = () => {
       setShowAnalyticsDialog(true);
     } catch (error) {
       console.error('Error fetching analytics:', error);
-        toast({
-          title: t('common.error'),
-          description: t('whatsappAdvanced.errorLoadingAnalytics'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('common.error'),
+        description: t('whatsappAdvanced.errorLoadingAnalytics'),
+        variant: "destructive"
+      });
     }
   };
 
@@ -409,11 +411,11 @@ const WhatsAppCampaignsAdvanced = () => {
       }
     } catch (error) {
       console.error('Error creating template:', error);
-        toast({
-          title: t('common.error'),
-          description: t('whatsappAdvanced.errorCreatingTemplate'),
-          variant: "destructive"
-        });
+      toast({
+        title: t('common.error'),
+        description: t('whatsappAdvanced.errorCreatingTemplate'),
+        variant: "destructive"
+      });
     }
   };
 
@@ -498,11 +500,11 @@ const WhatsAppCampaignsAdvanced = () => {
             <Sparkles className="mr-2 h-4 w-4" />
             {t('whatsappAdvanced.templates')}
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               resetForm();
               setShowCreateDialog(true);
-            }} 
+            }}
             className="bg-gradient-to-r from-pink-500 to-purple-600 w-full sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
@@ -574,7 +576,7 @@ const WhatsAppCampaignsAdvanced = () => {
                       {getStatusBadge(campaign.status)}
                     </div>
                     <p className="text-gray-400 mb-4 line-clamp-2">{campaign.message_content}</p>
-                    
+
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                       {campaign.buttons && campaign.buttons.length > 0 && (
                         <span className="flex items-center gap-1">
@@ -663,7 +665,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Label>{t('whatsappAdvanced.campaignTitle')}</Label>
                 <Input
                   value={campaignForm.title}
-                  onChange={(e) => setCampaignForm({...campaignForm, title: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, title: e.target.value })}
                   placeholder={t('whatsappAdvanced.campaignTitlePlaceholder')}
                 />
               </div>
@@ -728,7 +730,7 @@ const WhatsAppCampaignsAdvanced = () => {
 
                 <Textarea
                   value={campaignForm.message_content}
-                  onChange={(e) => setCampaignForm({...campaignForm, message_content: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, message_content: e.target.value })}
                   placeholder={t('whatsappAdvanced.messagePlaceholder')}
                   rows={6}
                   className="font-mono"
@@ -756,76 +758,15 @@ const WhatsAppCampaignsAdvanced = () => {
 
               {/* Media URL (Image/Video) */}
               <div>
-                <Label htmlFor="media_url">{t('whatsappAdvanced.mediaUrl')}</Label>
-                <Input
-                  id="media_url"
+                <ImageUploader
                   value={campaignForm.media_url}
-                  onChange={(e) => setCampaignForm({...campaignForm, media_url: e.target.value})}
-                  placeholder={t('whatsappAdvanced.mediaUrlPlaceholder')}
+                  onChange={(url) => setCampaignForm({ ...campaignForm, media_url: url })}
+                  label={t('whatsappAdvanced.mediaUrl')}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   {t('whatsappAdvanced.mediaHint')}
                 </p>
-                {campaignForm.media_url && (() => {
-                  const url = campaignForm.media_url;
-                  // Extract YouTube video ID
-                  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
-                  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-                  
-                  if (youtubeMatch) {
-                    const videoId = youtubeMatch[1];
-                    return (
-                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
-                        <p className="text-xs text-gray-400 mb-1">Aperçu YouTube :</p>
-                        <div className="relative w-48 h-36 group">
-                          <img 
-                            src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                            alt="YouTube preview" 
-                            className="w-full h-full object-cover rounded"
-                            onError={(e) => {
-                              e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/60 transition-colors rounded">
-                            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
-                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else if (vimeoMatch) {
-                    return (
-                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
-                        <p className="text-xs text-gray-400 mb-1">Aperçu Vimeo :</p>
-                        <div className="w-48 h-36 bg-black rounded flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
-                              <div className="w-0 h-0 border-t-8 border-t-transparent border-l-12 border-l-white border-b-8 border-b-transparent ml-1"></div>
-                            </div>
-                            <p className="text-xs text-gray-300">Vidéo Vimeo</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    // Regular image
-                    return (
-                      <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
-                        <p className="text-xs text-gray-400 mb-1">Aperçu image :</p>
-                        <img 
-                          src={url} 
-                          alt="Media preview" 
-                          className="w-48 h-36 object-cover rounded"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<p class="text-xs text-red-400">❌ Impossible de charger l\'aperçu. Vérifiez l\'URL.</p>';
-                          }}
-                        />
-                      </div>
-                    );
-                  }
-                })()}
+
               </div>
 
               {/* WhatsApp Preview */}
@@ -837,14 +778,14 @@ const WhatsAppCampaignsAdvanced = () => {
                       const url = campaignForm.media_url;
                       const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
                       const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-                      
+
                       if (youtubeMatch) {
                         const videoId = youtubeMatch[1];
                         return (
                           <div className="relative w-full h-48 mb-2 group">
-                            <img 
+                            <img
                               src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                              alt="YouTube" 
+                              alt="YouTube"
                               className="w-full h-full object-cover rounded"
                               onError={(e) => {
                                 e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
@@ -870,9 +811,9 @@ const WhatsAppCampaignsAdvanced = () => {
                         );
                       } else {
                         return (
-                          <img 
-                            src={url} 
-                            alt="Media" 
+                          <img
+                            src={url}
+                            alt="Media"
                             className="w-full rounded mb-2 max-h-64 object-cover"
                             onError={(e) => e.target.style.display = 'none'}
                           />
@@ -906,7 +847,7 @@ const WhatsAppCampaignsAdvanced = () => {
                   <Label>{t('whatsappAdvanced.buttonType')}</Label>
                   <Select
                     value={currentButton.type}
-                    onValueChange={(value) => setCurrentButton({...currentButton, type: value})}
+                    onValueChange={(value) => setCurrentButton({ ...currentButton, type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -923,7 +864,7 @@ const WhatsAppCampaignsAdvanced = () => {
                   <Label>{t('whatsappAdvanced.buttonText')}</Label>
                   <Input
                     value={currentButton.text}
-                    onChange={(e) => setCurrentButton({...currentButton, text: e.target.value})}
+                    onChange={(e) => setCurrentButton({ ...currentButton, text: e.target.value })}
                     placeholder={t('whatsappAdvanced.buttonTextPlaceholder')}
                   />
                 </div>
@@ -933,7 +874,7 @@ const WhatsAppCampaignsAdvanced = () => {
                     <Label>{t('whatsappAdvanced.url')}</Label>
                     <Input
                       value={currentButton.url}
-                      onChange={(e) => setCurrentButton({...currentButton, url: e.target.value})}
+                      onChange={(e) => setCurrentButton({ ...currentButton, url: e.target.value })}
                       placeholder="https://..."
                     />
                   </div>
@@ -944,7 +885,7 @@ const WhatsAppCampaignsAdvanced = () => {
                     <Label>{t('whatsappAdvanced.phoneNumber')}</Label>
                     <Input
                       value={currentButton.phone_number}
-                      onChange={(e) => setCurrentButton({...currentButton, phone_number: e.target.value})}
+                      onChange={(e) => setCurrentButton({ ...currentButton, phone_number: e.target.value })}
                       placeholder={t('whatsappAdvanced.phonePlaceholder')}
                     />
                   </div>
@@ -987,7 +928,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Label>{t('whatsappAdvanced.contactStatus')}</Label>
                 <Select
                   value={campaignForm.target_status || ''}
-                  onValueChange={(value) => setCampaignForm({...campaignForm, target_status: value || null})}
+                  onValueChange={(value) => setCampaignForm({ ...campaignForm, target_status: value || null })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('whatsappAdvanced.allContacts')} />
@@ -1006,7 +947,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Input
                   type="datetime-local"
                   value={campaignForm.scheduled_at}
-                  onChange={(e) => setCampaignForm({...campaignForm, scheduled_at: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_at: e.target.value })}
                 />
               </div>
             </div>
@@ -1045,7 +986,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Label>{t('whatsappAdvanced.campaignTitle')}</Label>
                 <Input
                   value={campaignForm.title}
-                  onChange={(e) => setCampaignForm({...campaignForm, title: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, title: e.target.value })}
                   placeholder={t('whatsappAdvanced.campaignTitlePlaceholder')}
                 />
               </div>
@@ -1088,7 +1029,7 @@ const WhatsAppCampaignsAdvanced = () => {
 
                 <Textarea
                   value={campaignForm.message_content}
-                  onChange={(e) => setCampaignForm({...campaignForm, message_content: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, message_content: e.target.value })}
                   placeholder={t('whatsappAdvanced.messagePlaceholder')}
                   rows={6}
                   className="font-mono"
@@ -1120,7 +1061,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Input
                   id="edit_media_url"
                   value={campaignForm.media_url}
-                  onChange={(e) => setCampaignForm({...campaignForm, media_url: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, media_url: e.target.value })}
                   placeholder={t('whatsappAdvanced.mediaUrlPlaceholder')}
                 />
                 <p className="text-xs text-gray-500 mt-1">
@@ -1130,16 +1071,16 @@ const WhatsAppCampaignsAdvanced = () => {
                   const url = campaignForm.media_url;
                   const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
                   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-                  
+
                   if (youtubeMatch) {
                     const videoId = youtubeMatch[1];
                     return (
                       <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
                         <p className="text-xs text-gray-400 mb-1">Aperçu YouTube :</p>
                         <div className="relative w-48 h-36 group">
-                          <img 
+                          <img
                             src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                            alt="YouTube preview" 
+                            alt="YouTube preview"
                             className="w-full h-full object-cover rounded"
                             onError={(e) => {
                               e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
@@ -1171,9 +1112,9 @@ const WhatsAppCampaignsAdvanced = () => {
                     return (
                       <div className="mt-2 p-2 bg-gray-800 rounded border border-gray-700">
                         <p className="text-xs text-gray-400 mb-1">Aperçu image :</p>
-                        <img 
-                          src={url} 
-                          alt="Media preview" 
+                        <img
+                          src={url}
+                          alt="Media preview"
                           className="w-48 h-36 object-cover rounded"
                           onError={(e) => {
                             e.target.style.display = 'none';
@@ -1195,14 +1136,14 @@ const WhatsAppCampaignsAdvanced = () => {
                       const url = campaignForm.media_url;
                       const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\?\/]+)/);
                       const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
-                      
+
                       if (youtubeMatch) {
                         const videoId = youtubeMatch[1];
                         return (
                           <div className="relative w-full h-48 mb-2 group">
-                            <img 
+                            <img
                               src={`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`}
-                              alt="YouTube" 
+                              alt="YouTube"
                               className="w-full h-full object-cover rounded"
                               onError={(e) => {
                                 e.target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
@@ -1228,9 +1169,9 @@ const WhatsAppCampaignsAdvanced = () => {
                         );
                       } else {
                         return (
-                          <img 
-                            src={url} 
-                            alt="Media" 
+                          <img
+                            src={url}
+                            alt="Media"
                             className="w-full rounded mb-2 max-h-64 object-cover"
                             onError={(e) => e.target.style.display = 'none'}
                           />
@@ -1264,7 +1205,7 @@ const WhatsAppCampaignsAdvanced = () => {
                   <Label>{t('whatsappAdvanced.buttonType')}</Label>
                   <Select
                     value={currentButton.type}
-                    onValueChange={(value) => setCurrentButton({...currentButton, type: value})}
+                    onValueChange={(value) => setCurrentButton({ ...currentButton, type: value })}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1281,7 +1222,7 @@ const WhatsAppCampaignsAdvanced = () => {
                   <Label>{t('whatsappAdvanced.buttonText')}</Label>
                   <Input
                     value={currentButton.text}
-                    onChange={(e) => setCurrentButton({...currentButton, text: e.target.value})}
+                    onChange={(e) => setCurrentButton({ ...currentButton, text: e.target.value })}
                     placeholder={t('whatsappAdvanced.buttonTextPlaceholder')}
                   />
                 </div>
@@ -1291,7 +1232,7 @@ const WhatsAppCampaignsAdvanced = () => {
                     <Label>{t('whatsappAdvanced.url')}</Label>
                     <Input
                       value={currentButton.url}
-                      onChange={(e) => setCurrentButton({...currentButton, url: e.target.value})}
+                      onChange={(e) => setCurrentButton({ ...currentButton, url: e.target.value })}
                       placeholder="https://..."
                     />
                   </div>
@@ -1302,7 +1243,7 @@ const WhatsAppCampaignsAdvanced = () => {
                     <Label>{t('whatsappAdvanced.phoneNumber')}</Label>
                     <Input
                       value={currentButton.phone_number}
-                      onChange={(e) => setCurrentButton({...currentButton, phone_number: e.target.value})}
+                      onChange={(e) => setCurrentButton({ ...currentButton, phone_number: e.target.value })}
                       placeholder={t('whatsappAdvanced.phonePlaceholder')}
                     />
                   </div>
@@ -1345,7 +1286,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Label>{t('whatsappAdvanced.contactStatus')}</Label>
                 <Select
                   value={campaignForm.target_status || ''}
-                  onValueChange={(value) => setCampaignForm({...campaignForm, target_status: value || null})}
+                  onValueChange={(value) => setCampaignForm({ ...campaignForm, target_status: value || null })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('whatsappAdvanced.allContacts')} />
@@ -1364,7 +1305,7 @@ const WhatsAppCampaignsAdvanced = () => {
                 <Input
                   type="datetime-local"
                   value={campaignForm.scheduled_at}
-                  onChange={(e) => setCampaignForm({...campaignForm, scheduled_at: e.target.value})}
+                  onChange={(e) => setCampaignForm({ ...campaignForm, scheduled_at: e.target.value })}
                 />
               </div>
             </div>
@@ -1396,7 +1337,7 @@ const WhatsAppCampaignsAdvanced = () => {
               <Label>{t('whatsappAdvanced.templateName')}</Label>
               <Input
                 value={templateForm.name}
-                onChange={(e) => setTemplateForm({...templateForm, name: e.target.value})}
+                onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
                 placeholder={t('whatsappAdvanced.templateNamePlaceholder')}
               />
             </div>
@@ -1405,7 +1346,7 @@ const WhatsAppCampaignsAdvanced = () => {
               <Label>{t('whatsappAdvanced.category')}</Label>
               <Select
                 value={templateForm.category}
-                onValueChange={(value) => setTemplateForm({...templateForm, category: value})}
+                onValueChange={(value) => setTemplateForm({ ...templateForm, category: value })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1422,7 +1363,7 @@ const WhatsAppCampaignsAdvanced = () => {
               <Label>{t('whatsappAdvanced.content')}</Label>
               <Textarea
                 value={templateForm.content}
-                onChange={(e) => setTemplateForm({...templateForm, content: e.target.value})}
+                onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
                 placeholder={t('whatsappAdvanced.contentPlaceholder')}
                 rows={5}
               />

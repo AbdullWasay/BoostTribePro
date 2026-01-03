@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { fr, enUS, de } from 'date-fns/locale';
+import "react-day-picker/style.css";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -113,12 +114,12 @@ const Calendar = () => {
         <Card className="glass border-primary/20" data-testid="scheduled-campaigns">
           <CardHeader>
             <CardTitle>
-              {t('calendar.scheduledCampaigns', { 
-                date: selectedDate.toLocaleDateString(i18n.language, { 
-                  weekday: 'long', 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
+              {t('calendar.scheduledCampaigns', {
+                date: selectedDate.toLocaleDateString(i18n.language, {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
                 })
               })}
             </CardTitle>

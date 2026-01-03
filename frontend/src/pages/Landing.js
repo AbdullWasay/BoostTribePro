@@ -4,6 +4,7 @@ import { ArrowRight, Mail, MessageCircle, Sparkles, BarChart3, Users, Zap } from
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const Landing = () => {
   const { i18n } = useTranslation();
@@ -15,6 +16,7 @@ const Landing = () => {
         title: 'Transformez votre marketing avec l\'IA',
         subtitle: 'Automatisez vos campagnes email et WhatsApp avec l\'intelligence artificielle. Générez du contenu personnalisé en quelques secondes.',
         cta: 'Commencer gratuitement',
+        pricing: 'Tarifs',
         demo: 'Voir la démo'
       },
       features: {
@@ -74,6 +76,7 @@ const Landing = () => {
         title: 'Transform your marketing with AI',
         subtitle: 'Automate your email and WhatsApp campaigns with artificial intelligence. Generate personalized content in seconds.',
         cta: 'Start for free',
+        pricing: 'Pricing',
         demo: 'See demo'
       },
       features: {
@@ -133,6 +136,7 @@ const Landing = () => {
         title: 'Transformieren Sie Ihr Marketing mit KI',
         subtitle: 'Automatisieren Sie Ihre E-Mail- und WhatsApp-Kampagnen mit künstlicher Intelligenz. Erstellen Sie personalisierte Inhalte in Sekunden.',
         cta: 'Kostenlos starten',
+        pricing: 'Preise',
         demo: 'Demo ansehen'
       },
       features: {
@@ -198,32 +202,57 @@ const Landing = () => {
           <Badge className="bg-primary/20 text-primary border-primary/30 text-lg px-6 py-2">
             {t.hero.badge}
           </Badge>
-          
+
           <h1 className="text-6xl md:text-7xl font-bold leading-tight">
             <span className="text-gradient">{t.hero.title}</span>
           </h1>
-          
+
           <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto">
             {t.hero.subtitle}
           </p>
-          
+
           <div className="flex gap-4 justify-center flex-wrap pt-4">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="bg-primary hover:bg-primary/90 glow text-lg px-8 py-6"
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => window.location.href = '/register'}
             >
               {t.hero.cta}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button 
-              size="lg" 
+
+            <Button
+              size="lg"
               variant="outline"
               className="text-lg px-8 py-6"
               onClick={() => window.location.href = '/pricing'}
             >
-              {t.hero.demo}
+              {t.hero.pricing}
             </Button>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-lg px-8 py-6"
+                >
+                  <Sparkles className="mr-2 h-5 w-5" />
+                  {t.hero.demo}
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-none">
+                <video
+                  controls
+                  autoPlay
+                  className="w-full h-full aspect-video"
+                >
+                  <source src="/demo.mov" type="video/quicktime" />
+                  <source src="/demo.mov" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </section>
@@ -235,7 +264,7 @@ const Landing = () => {
             <h2 className="text-4xl md:text-5xl font-bold mb-4">{t.features.title}</h2>
             <p className="text-xl text-gray-400">{t.features.subtitle}</p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {t.features.items.map((feature, index) => (
               <Card key={index} className="glass border-primary/20 hover:glow transition-all duration-300">
@@ -272,8 +301,8 @@ const Landing = () => {
             <CardContent className="py-16">
               <h2 className="text-4xl font-bold mb-4">{t.cta.title}</h2>
               <p className="text-xl text-gray-400 mb-8">{t.cta.subtitle}</p>
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-primary hover:bg-primary/90 glow text-lg px-8 py-6"
                 onClick={() => window.location.href = '/dashboard'}
               >

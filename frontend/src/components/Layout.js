@@ -23,8 +23,12 @@ const Layout = ({ children }) => {
   const [languageSelectOpen, setLanguageSelectOpen] = useState(false);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    // Navigate first to unmount the layout gracefully before the state changes
+    navigate('/login', { replace: true });
+    // Then clear the state
+    setTimeout(() => {
+      logout();
+    }, 0);
   };
 
   // Filter navigation based on user role - memoized to prevent unnecessary re-renders
@@ -48,7 +52,7 @@ const Layout = ({ children }) => {
       { name: t('nav.payments'), href: '/payment-settings', icon: CreditCard },
       { name: t('nav.admin'), href: '/admin', icon: Settings, adminOnly: true },
     ];
-    return allNavigation.filter(item => !item.adminOnly || (user && user.role === 'admin'));
+    return allNavigation.filter(item => !item.adminOnly || (user && (user.role === 'admin' || user.role === 'superadmin')));
   }, [i18n.language, user?.role, t]);
 
   const changeLanguage = (lng) => {
@@ -69,7 +73,7 @@ const Layout = ({ children }) => {
             {/* Logo */}
             <div className="flex items-center flex-shrink-0 px-4 mb-8">
               <h1 className="text-2xl font-bold text-gradient" data-testid="app-logo">
-                BoostTribe
+                <span>BoostTribe</span>
               </h1>
             </div>
 
@@ -77,17 +81,17 @@ const Layout = ({ children }) => {
             {user && (
               <div className="px-4 mb-4">
                 <div className="glass border border-primary/20 rounded-lg p-3">
-                  <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                  <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  <p className="text-sm font-medium text-white truncate"><span>{user.name}</span></p>
+                  <p className="text-xs text-gray-400 truncate"><span>{user.email}</span></p>
                   {user.role === 'admin' && (
                     <span className="inline-flex items-center px-2 py-0.5 mt-2 text-xs font-medium bg-primary/20 text-primary rounded">
-                      Admin
+                      <span>Admin</span>
                     </span>
                   )}
                 </div>
               </div>
             )}
-            
+
             {/* Navigation */}
             <nav className="flex-1 px-2 space-y-1" data-testid="sidebar-nav">
               {navigation.map((item) => {
@@ -100,19 +104,17 @@ const Layout = ({ children }) => {
                     onClick={() => setLanguageSelectOpen(false)}
                     className={
                       `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                      ${
-                        isActive
-                          ? 'bg-primary text-white glow'
-                          : 'text-gray-300 hover:bg-primary/20 hover:text-primary'
+                      ${isActive
+                        ? 'bg-primary text-white glow'
+                        : 'text-gray-300 hover:bg-primary/20 hover:text-primary'
                       }`
                     }
                   >
                     <item.icon
-                      className={`mr-3 flex-shrink-0 h-5 w-5 ${
-                        isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary'
-                      }`}
+                      className={`mr-3 flex-shrink-0 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-primary'
+                        }`}
                     />
-                    {item.name}
+                    <span>{item.name}</span>
                   </Link>
                 );
               })}
@@ -120,8 +122,8 @@ const Layout = ({ children }) => {
 
             {/* Language Selector */}
             <div className="px-4 mt-4">
-              <Select 
-                value={i18n.language} 
+              <Select
+                value={i18n.language}
                 onValueChange={changeLanguage}
                 open={languageSelectOpen}
                 onOpenChange={setLanguageSelectOpen}
@@ -146,7 +148,7 @@ const Layout = ({ children }) => {
                 className="w-full justify-start text-gray-300 hover:text-primary hover:bg-primary/20"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                {t('auth.logout')}
+                <span>{t('auth.logout')}</span>
               </Button>
             </div>
           </div>
@@ -174,7 +176,7 @@ const Layout = ({ children }) => {
             <div className="flex flex-col flex-grow pt-20 pb-4 overflow-y-auto">
               <div className="flex items-center flex-shrink-0 px-4 mb-8">
                 <h1 className="text-2xl font-bold text-gradient">
-                  BoostTribe
+                  <span>BoostTribe</span>
                 </h1>
               </div>
 
@@ -182,11 +184,11 @@ const Layout = ({ children }) => {
               {user && (
                 <div className="px-4 mb-4">
                   <div className="glass border border-primary/20 rounded-lg p-3">
-                    <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                    <p className="text-sm font-medium text-white truncate"><span>{user.name}</span></p>
+                    <p className="text-xs text-gray-400 truncate"><span>{user.email}</span></p>
                     {user.role === 'admin' && (
                       <span className="inline-flex items-center px-2 py-0.5 mt-2 text-xs font-medium bg-primary/20 text-primary rounded">
-                        Admin
+                        <span>Admin</span>
                       </span>
                     )}
                   </div>
@@ -197,31 +199,30 @@ const Layout = ({ children }) => {
                 {navigation.map((item) => {
                   const isActive = location.pathname === item.href;
                   return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setLanguageSelectOpen(false);
-                    }}
-                    className={
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setLanguageSelectOpen(false);
+                      }}
+                      className={
                         `group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200
-                        ${
-                          isActive
-                            ? 'bg-primary text-white glow'
-                            : 'text-gray-300 hover:bg-primary/20 hover:text-primary'
+                        ${isActive
+                          ? 'bg-primary text-white glow'
+                          : 'text-gray-300 hover:bg-primary/20 hover:text-primary'
                         }`
                       }
                     >
                       <item.icon className="mr-3 flex-shrink-0 h-5 w-5" />
-                      {item.name}
+                      <span>{item.name}</span>
                     </Link>
                   );
                 })}
               </nav>
               <div className="px-4 mt-4">
-                <Select 
-                  value={i18n.language} 
+                <Select
+                  value={i18n.language}
                   onValueChange={changeLanguage}
                   open={languageSelectOpen}
                   onOpenChange={setLanguageSelectOpen}
@@ -246,7 +247,7 @@ const Layout = ({ children }) => {
                   className="w-full justify-start text-gray-300 hover:text-primary hover:bg-primary/20"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  {t('auth.logout')}
+                  <span>{t('auth.logout')}</span>
                 </Button>
               </div>
             </div>

@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
         setUser(parsedUser);
         setLoading(false); // Set loading to false immediately
-        
+
         // Verify token in the background (non-blocking)
         // Use BACKEND_URL directly (it's a module-level constant, doesn't need to be in deps)
         const backendUrl = BACKEND_URL;
@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
             // Add timeout to prevent hanging
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
+
             const response = await fetch(`${backendUrl}/api/auth/me`, {
               headers: {
                 'Authorization': `Bearer ${tokenToVerify}`
@@ -93,7 +93,7 @@ export const AuthProvider = ({ children }) => {
             }
           }
         };
-        
+
         // Verify in background, don't block UI
         verifyToken(storedToken).catch(err => {
           console.error('Background token verification error:', err);
@@ -128,31 +128,31 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      
+
       // Debug logging
-      console.log('Login response:', { 
-        hasToken: !!data.token, 
+      console.log('Login response:', {
+        hasToken: !!data.token,
         hasUser: !!data.user,
         userRole: data.user?.role,
         userId: data.user?.id
       });
-      
+
       // Validate response structure
       if (!data.token || !data.user) {
         console.error('Invalid login response structure:', data);
         throw new Error('Invalid response from server');
       }
-      
+
       // Ensure user role is set
       if (!data.user.role) {
         console.warn('User role missing, defaulting to user');
         data.user.role = 'user';
       }
-      
+
       // Store token and user
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      
+
       setToken(data.token);
       setUser(data.user);
 
@@ -179,11 +179,11 @@ export const AuthProvider = ({ children }) => {
       }
 
       const data = await response.json();
-      
+
       // Store token and user
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      
+
       setToken(data.token);
       setUser(data.user);
 
@@ -194,7 +194,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAdmin = useCallback(() => {
-    return user && user.role === 'admin';
+    return user && (user.role === 'admin' || user.role === 'superadmin');
+  }, [user]);
+
+  const isSuperAdmin = useCallback(() => {
+    return user && user.role === 'superadmin';
   }, [user]);
 
   const value = {
@@ -204,7 +208,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    isAdmin
+    isAdmin,
+    isSuperAdmin
   };
 
   return (
