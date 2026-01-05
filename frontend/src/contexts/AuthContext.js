@@ -187,7 +187,7 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       setUser(data.user);
 
-      return { success: true, user: data.user };
+      return { success: true, user: data.user, token: data.token };
     } catch (error) {
       return { success: false, error: error.message };
     }

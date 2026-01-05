@@ -4398,16 +4398,37 @@ async def handle_stripe_webhook(request: Request):
             logger.info(f"Payment succeeded: {payment_intent['id']}")
             # Handle successful payment (create user account, send email, etc.)
         
+        elif event_type == "checkout.session.completed":
+            session = event["data"]["object"]
+            session_id = session.get("id")
+            metadata = session.get("metadata", {})
+            entity_type = metadata.get("entity_type")
+            
+            logger.info(f"Checkout session completed: {session_id}, entity_type: {entity_type}")
+            
+            # If it's a subscription, update user plan to 'pro'
+            if entity_type == "subscription":
+                user_id = metadata.get("user_id")
+                if user_id:
+                    # Update user plan to 'pro'
+                    await db.users.update_one(
+                        {"id": user_id},
+                        {"$set": {"plan": "pro"}}
+                    )
+                    logger.info(f"User {user_id} plan updated to 'pro' after subscription payment")
+        
         elif event_type == "invoice.payment_succeeded":
             invoice = event["data"]["object"]
             subscription_id = invoice.get("subscription")
             logger.info(f"Subscription payment succeeded: {subscription_id}")
-            # Update subscription status
+            # Update subscription status - find user by subscription metadata
+            # This is handled by checkout.session.completed above
         
         elif event_type == "customer.subscription.deleted":
             subscription = event["data"]["object"]
             logger.info(f"Subscription cancelled: {subscription['id']}")
-            # Handle subscription cancellation
+            # Handle subscription cancellation - could downgrade user plan
+            # For now, we'll keep the plan as 'pro' until manually changed
         
         return {"status": "ok"}
     except Exception as e:
@@ -6684,6 +6705,137 @@ async def create_reservation_checkout(
     }
 
 
+class SubscriptionCheckoutCreate(BaseModel):
+    plan_id: str
+    customer_email: EmailStr
+    customer_name: str
+    origin_url: Optional[str] = None
+
+@api_router.post("/stripe/create-subscription-checkout")
+async def create_subscription_checkout(
+    checkout_data: SubscriptionCheckoutCreate,
+    current_user: Dict = Depends(get_current_user),
+    request: Request = None
+):
+    """Create Stripe checkout session for subscription/pricing plan"""
+    try:
+        # Get pricing plan
+        plan = await db.pricing_plans.find_one({"id": checkout_data.plan_id}, {"_id": 0})
+        if not plan:
+            raise HTTPException(status_code=404, detail="Pricing plan not found")
+        
+        if not plan.get("active"):
+            raise HTTPException(status_code=400, detail="Pricing plan is not active")
+        
+        # Get user's Stripe keys from payment settings
+        payment_config = await db.payment_settings.find_one(
+            {"user_id": current_user["id"]},
+            {"_id": 0}
+        )
+        
+        # If user doesn't have payment config, use system default
+        if not payment_config or not payment_config.get("stripe_secret_key"):
+            settings = await get_settings()
+            if not settings.stripe_secret_key:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Stripe not configured. Please configure Stripe keys in payment settings."
+                )
+            stripe_key = settings.stripe_secret_key
+        else:
+            stripe_key = payment_config["stripe_secret_key"]
+        
+        # Get origin URL from request if not provided
+        origin_url = checkout_data.origin_url
+        if not origin_url:
+            origin_url = str(request.base_url).rstrip('/') if request else 'https://boost-tribe-pro.vercel.app'
+        
+        # Initialize Stripe
+        stripe.api_key = stripe_key
+        
+        # Calculate amount
+        amount = float(plan.get("price", 0))
+        currency = plan.get("currency", "CHF").lower()
+        
+        # Create URLs
+        success_url = f"{origin_url}/subscription-success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{origin_url}/pricing"
+        
+        # Metadata for tracking
+        metadata = {
+            "entity_type": "subscription",
+            "plan_id": checkout_data.plan_id,
+            "plan_name": plan.get("name", ""),
+            "user_id": current_user["id"],
+            "customer_email": checkout_data.customer_email,
+            "customer_name": checkout_data.customer_name
+        }
+        
+        # Create checkout session
+        if amount > 0:
+            # Paid plan - create subscription checkout
+            session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': currency,
+                        'unit_amount': int(amount * 100),  # Stripe expects cents
+                        'recurring': {
+                            'interval': plan.get("interval", "month")
+                        },
+                        'product_data': {
+                            'name': plan.get("name", "Subscription"),
+                            'description': plan.get("description_fr", "")[:500]
+                        }
+                    },
+                    'quantity': 1
+                }],
+                mode='subscription',
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata=metadata,
+                customer_email=checkout_data.customer_email
+            )
+        else:
+            # Free plan - just return success (no payment needed)
+            return {
+                "url": success_url.replace("{CHECKOUT_SESSION_ID}", "free"),
+                "session_id": "free",
+                "free_plan": True
+            }
+        
+        # Create payment transaction record
+        payment_transaction = PaymentTransaction(
+            session_id=session.id,
+            user_id=current_user["id"],
+            customer_email=checkout_data.customer_email,
+            amount=amount,
+            currency=currency.upper(),
+            payment_status="pending",
+            status="initiated",
+            entity_type="subscription",
+            entity_id=checkout_data.plan_id,
+            metadata=metadata
+        )
+        
+        trans_dict = payment_transaction.model_dump()
+        trans_dict["created_at"] = trans_dict["created_at"].isoformat()
+        trans_dict["updated_at"] = trans_dict["updated_at"].isoformat()
+        
+        await db.payment_transactions.insert_one(trans_dict)
+        
+        logger.info(f"Subscription checkout session created: {session.id} for plan {checkout_data.plan_id}")
+        
+        return {
+            "url": session.url,
+            "session_id": session.id
+        }
+        
+    except Exception as e:
+        logger.error(f"Error creating subscription checkout: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating checkout: {str(e)}")
+
+
 @api_router.get("/payments/status/{session_id}")
 async def get_payment_status(session_id: str):
     """Check payment status and create reservation if paid"""
@@ -6726,17 +6878,32 @@ async def get_payment_status(session_id: str):
             }
         )
         
-        # If paid and not yet processed, create reservation
+        # If paid and not yet processed, handle based on entity type
         if checkout_status.payment_status == "paid":
-            # Check if reservation already created (prevent duplicates)
-            existing_reservation = await db.reservations.find_one({
-                "payment_intent_id": session_id
-            }, {"_id": 0})
+            metadata = checkout_status.metadata
+            entity_type = metadata.get("entity_type")
             
-            if not existing_reservation:
-                # Create reservation from metadata
-                metadata = checkout_status.metadata
-                item = await db.catalog_items.find_one({"id": metadata["catalog_item_id"]}, {"_id": 0})
+            # Handle subscription payments - update user plan to 'pro'
+            if entity_type == "subscription":
+                user_id = metadata.get("user_id")
+                if user_id:
+                    # Update user plan to 'pro'
+                    await db.users.update_one(
+                        {"id": user_id},
+                        {"$set": {"plan": "pro"}}
+                    )
+                    logger.info(f"User {user_id} plan updated to 'pro' after subscription payment confirmation")
+            
+            # Handle reservation payments
+            elif entity_type == "reservation":
+                # Check if reservation already created (prevent duplicates)
+                existing_reservation = await db.reservations.find_one({
+                    "payment_intent_id": session_id
+                }, {"_id": 0})
+                
+                if not existing_reservation:
+                    # Create reservation from metadata
+                    item = await db.catalog_items.find_one({"id": metadata["catalog_item_id"]}, {"_id": 0})
                 
                 if item:
                     reservation = Reservation(

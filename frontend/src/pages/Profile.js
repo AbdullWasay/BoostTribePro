@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Mail, Key, CreditCard, Calendar, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
@@ -15,14 +16,16 @@ const API = `${BACKEND_URL}/api`;
 
 const Profile = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { user, token } = useAuth(); // Get logged-in user data
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
-
+  const [userPlan, setUserPlan] = useState(null);
 
   useEffect(() => {
     if (user && token) {
       fetchStats();
+      fetchUserPlan();
     }
   }, [user, token]);
 
@@ -36,6 +39,42 @@ const Profile = () => {
       console.error('Error fetching stats:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserPlan = async () => {
+    try {
+      // Get user's actual plan from the user object
+      const userPlanValue = user?.plan || 'free';
+      
+      // If plan is 'pro', fetch the pricing plan details
+      if (userPlanValue === 'pro') {
+        // Try to get the most common pro plan (you might want to store plan_id in user object)
+        const plansResponse = await axios.get(`${API}/pricing-plans`);
+        const plans = plansResponse.data.filter(p => p.active && p.price > 0);
+        if (plans.length > 0) {
+          // Get the first paid plan or highlighted plan
+          const proPlan = plans.find(p => p.highlighted) || plans[0];
+          setUserPlan({
+            name: proPlan.name || 'Pro',
+            price: proPlan.price,
+            currency: proPlan.currency || 'CHF'
+          });
+        } else {
+          setUserPlan({ name: 'Pro', price: 49, currency: 'CHF' });
+        }
+      } else {
+        // Free plan
+        setUserPlan({ name: 'Free', price: 0, currency: 'CHF' });
+      }
+    } catch (error) {
+      console.error('Error fetching user plan:', error);
+      // Fallback to user.plan value
+      setUserPlan({ 
+        name: user?.plan === 'pro' ? 'Pro' : 'Free', 
+        price: user?.plan === 'pro' ? 49 : 0, 
+        currency: 'CHF' 
+      });
     }
   };
 
@@ -89,9 +128,19 @@ const Profile = () => {
             </div>
             <div>
               <Label className="text-gray-400">{t('profile.currentPlan')}</Label>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge className="bg-primary text-white">Pro Coach</Badge>
-                <span className="text-sm text-gray-400">49 CHF/mois</span>
+              <div 
+                className="flex items-center gap-2 mt-1 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => navigate('/pricing')}
+                title={t('profile.upgrade') || 'Modifier votre plan'}
+              >
+                <Badge className={user?.plan === 'pro' ? 'bg-primary text-white' : 'bg-gray-600 text-white'}>
+                  {userPlan?.name || (user?.plan === 'pro' ? 'Pro' : 'Free')}
+                </Badge>
+                {userPlan && userPlan.price > 0 ? (
+                  <span className="text-sm text-gray-400">{userPlan.price} {userPlan.currency}/mois</span>
+                ) : (
+                  <span className="text-sm text-gray-400">{t('catalog.free') || 'Gratuit'}</span>
+                )}
               </div>
             </div>
             <div>

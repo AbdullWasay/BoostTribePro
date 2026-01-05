@@ -273,8 +273,18 @@ const Campaigns = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2" data-testid="campaigns-title">{t('campaigns.title')}</h1>
-          <p className="text-gray-400">{t('campaigns.subtitle', { count: campaigns.length })}</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2" data-testid="campaigns-title">{t('campaigns.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-400">
+            {campaigns.length === 0 
+              ? t('campaigns.noCampaigns', { defaultValue: 'Aucune campagne' })
+              : (() => {
+                  const subtitle = t('campaigns.subtitle', { count: campaigns.length });
+                  return subtitle && subtitle.includes('{count}') 
+                    ? subtitle.replace('{count}', campaigns.length)
+                    : subtitle || `${campaigns.length} campagnes`;
+                })()
+            }
+          </p>
         </div>
         <Button
           onClick={() => {
@@ -295,12 +305,14 @@ const Campaigns = () => {
           <Card key={campaign.id} className="glass border-primary/20 hover:glow transition-all duration-300" data-testid={`campaign-card-${index}`}>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-white mb-1">{campaign.title}</h3>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-lg text-white mb-1 break-words">{campaign.title}</h3>
                     <p className="text-sm text-gray-400 line-clamp-1">{campaign.subject}</p>
                   </div>
-                  {getStatusBadge(campaign.status)}
+                  <div className="shrink-0">
+                    {getStatusBadge(campaign.status)}
+                  </div>
                 </div>
 
                 <div className="space-y-2 text-sm">
@@ -330,11 +342,11 @@ const Campaigns = () => {
                     size="sm"
                     onClick={() => openEditDialog(campaign)}
                     variant="outline"
-                    className="flex-1 min-w-[100px]"
+                    className="h-8 w-8 p-0"
+                    title={t('campaigns.edit')}
                     data-testid={`edit-campaign-${index}`}
                   >
-                    <Edit className="mr-1 h-3 w-3" />
-                    {t('campaigns.edit')}
+                    <Edit className="h-4 w-4" />
                   </Button>
 
                   {/* Duplicate button - available for all campaigns */}
@@ -342,11 +354,11 @@ const Campaigns = () => {
                     size="sm"
                     onClick={() => handleDuplicateCampaign(campaign)}
                     variant="outline"
-                    className="flex-1 min-w-[100px]"
+                    className="h-8 w-8 p-0"
+                    title={t('campaigns.duplicate')}
                     data-testid={`duplicate-campaign-${index}`}
                   >
-                    <Copy className="mr-1 h-3 w-3" />
-                    {t('campaigns.duplicate')}
+                    <Copy className="h-4 w-4" />
                   </Button>
 
                   {/* Send button - only for draft campaigns */}
@@ -559,6 +571,16 @@ const Campaigns = () => {
                     placeholder={formData.content_html ? "" : "Modifier le contenu..."}
                   />
                 </div>
+              </div>
+              <div>
+                <Label htmlFor="edit-scheduled">{t('campaigns.schedule')} (optionnel)</Label>
+                <Input
+                  id="edit-scheduled"
+                  type="datetime-local"
+                  value={formData.scheduled_at ? new Date(formData.scheduled_at).toISOString().slice(0, 16) : ''}
+                  onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value ? new Date(e.target.value).toISOString() : null })}
+                  data-testid="edit-schedule-input"
+                />
               </div>
             </div>
             <DialogFooter>

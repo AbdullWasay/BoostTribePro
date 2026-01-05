@@ -36,6 +36,45 @@ const CheckoutPage = () => {
     }
   }, [productId]);
 
+  // Function to process image URL (handle YouTube, relative URLs, etc.)
+  const getProductImageUrl = (imageUrl) => {
+    if (!imageUrl) {
+      return null;
+    }
+
+    const url = imageUrl.trim();
+    
+    // Check if it's a YouTube URL and extract thumbnail
+    const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)/);
+    if (youtubeMatch) {
+      const videoId = youtubeMatch[1];
+      // Use maxresdefault for best quality, fallback to hqdefault
+      return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+    } 
+    // Check if it's a Vimeo URL
+    else if (url.includes('vimeo.com')) {
+      const vimeoMatch = url.match(/vimeo\.com\/(?:.*\/)?(\d+)/);
+      if (vimeoMatch) {
+        // Vimeo thumbnail requires API, use fallback
+        return `${window.location.origin}/logo512.png`;
+      }
+    }
+    // If it's a relative URL, make it absolute
+    else if (url.startsWith('/')) {
+      return `${window.location.origin}${url}`;
+    }
+    // If it's already absolute, use it as is
+    else if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // Otherwise, make it absolute
+    else {
+      return `${window.location.origin}/${url}`;
+    }
+    
+    return null;
+  };
+
   const fetchProduct = async () => {
     try {
       // The /api/catalog/{item_id} endpoint is public and doesn't require authentication
@@ -151,12 +190,8 @@ const CheckoutPage = () => {
           <CardContent className="py-12 text-center">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-white mb-4">Commande créée !</h2>
-            <Badge className="bg-yellow-500/20 text-yellow-400 mb-4">
-              Mode Simulation
-            </Badge>
             <p className="text-gray-300 mb-6">
-              Votre commande a été enregistrée en mode simulation.
-              Les paiements Stripe et Twint seront configurés prochainement.
+              Votre commande a été créée avec succès.
             </p>
             <div className="space-y-2">
               <Button
@@ -188,9 +223,6 @@ const CheckoutPage = () => {
           <h1 className="text-4xl font-bold text-gradient mb-2">
             Finaliser votre commande
           </h1>
-          <Badge className="bg-yellow-500/20 text-yellow-400">
-            Mode Simulation - Paiement à venir
-          </Badge>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -204,17 +236,24 @@ const CheckoutPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex gap-4">
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.title}
-                    className="w-24 h-24 object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-lg flex items-center justify-center">
-                    <ShoppingCart className="h-10 w-10 text-primary/50" />
-                  </div>
-                )}
+                {(() => {
+                  const imageUrl = getProductImageUrl(product.image_url);
+                  return imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={product.title}
+                      className="w-24 h-24 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = `${window.location.origin}/logo512.png`;
+                      }}
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                      <ShoppingCart className="h-10 w-10 text-primary/50" />
+                    </div>
+                  );
+                })()}
                 <div className="flex-1">
                   <h3 className="font-semibold text-white">{product.title}</h3>
                   <p className="text-sm text-gray-400 line-clamp-2">{product.description}</p>

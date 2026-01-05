@@ -295,25 +295,25 @@ const AdChat = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100%-5rem)]">
         {/* Left Column - Contacts by Subscription Status (Hidden on mobile when chat selected) */}
-        <Card className={`lg:col-span-3 ${showMobileChat ? 'hidden lg:block' : 'block'}`}>
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              {t('contacts.title')}
+        <Card className={`lg:col-span-3 ${showMobileChat ? 'hidden lg:block' : 'block'} overflow-hidden flex flex-col`}>
+          <CardHeader className="pb-2 sm:pb-4">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span className="truncate">{t('contacts.title')}</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 flex-1 overflow-y-auto">
             {subscriptionGroups.map(group => (
               <button
                 key={group.id}
                 onClick={() => setSelectedSubscriptionStatus(group.status)}
-                className={`w-full text-left p-3 rounded-lg transition-colors flex justify-between items-center ${selectedSubscriptionStatus === group.status
+                className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors flex justify-between items-center text-xs sm:text-sm ${selectedSubscriptionStatus === group.status
                   ? 'bg-primary text-white'
                   : 'bg-gray-800 hover:bg-gray-700'
                   }`}
               >
-                <span>{group.name}</span>
-                <Badge variant={selectedSubscriptionStatus === group.status ? 'secondary' : 'outline'}>
+                <span className="truncate flex-1">{group.name}</span>
+                <Badge variant={selectedSubscriptionStatus === group.status ? 'secondary' : 'outline'} className="ml-2 shrink-0">
                   {group.count}
                 </Badge>
               </button>
@@ -375,41 +375,44 @@ const AdChat = () => {
         </Card>
 
         {/* Right Column - Conversations and Chat Details */}
-        <Card className={`lg:col-span-9 ${showMobileChat ? 'block' : 'block'}`}>
-          <div className="grid grid-cols-1 lg:grid-cols-5 h-full">
+        <Card className={`lg:col-span-9 ${showMobileChat ? 'block' : 'block'} overflow-hidden flex flex-col`}>
+          <div className="grid grid-cols-1 lg:grid-cols-5 h-full flex-1 min-h-0">
             {/* Conversations List */}
-            <div className={`lg:col-span-2 border-r border-gray-700 ${showMobileChat ? 'hidden lg:block' : 'block'}`}>
-              <CardHeader>
-                <CardTitle className="text-lg">{t('adChat.conversations')} ({filteredChats.length})</CardTitle>
+            <div className={`lg:col-span-2 border-r border-gray-700 flex flex-col ${showMobileChat ? 'hidden lg:flex' : 'flex'}`}>
+              <CardHeader className="pb-2 sm:pb-4 flex-shrink-0">
+                <CardTitle className="text-base sm:text-lg">{t('adChat.conversations')} ({filteredChats.length})</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 max-h-[calc(100vh-16rem)] overflow-y-auto">
+              <CardContent className="space-y-2 flex-1 overflow-y-auto">
                 {filteredChats.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">{t('adChat.noConversations')}</p>
                 ) : (
                   filteredChats.map((chat) => (
                     <div
                       key={chat.id}
-                      onClick={() => loadChatDetails(chat.id)}
-                      className={`p-4 rounded-lg cursor-pointer transition-all ${selectedChat?.id === chat.id
+                      onClick={() => {
+                        loadChatDetails(chat.id);
+                        setShowMobileChat(true);
+                      }}
+                      className={`p-2 sm:p-4 rounded-lg cursor-pointer transition-all ${selectedChat?.id === chat.id
                         ? 'bg-primary/20 border-primary border-2'
                         : 'bg-gray-800 hover:bg-gray-700 border border-transparent'
                         }`}
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="h-4 w-4" />
-                          <span className="font-medium">{chat.visitor_name || t('adChat.anonymous')}</span>
+                      <div className="flex justify-between items-start mb-1 sm:mb-2 gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                          <span className="font-medium text-xs sm:text-sm truncate">{chat.visitor_name || t('adChat.anonymous')}</span>
                         </div>
-                        <Badge variant={chat.status === 'new' ? 'default' : 'outline'}>
+                        <Badge variant={chat.status === 'new' ? 'default' : 'outline'} className="text-[10px] sm:text-xs shrink-0">
                           {chat.status}
                         </Badge>
                       </div>
-                      <p className="text-sm text-gray-400 truncate">
+                      <p className="text-xs sm:text-sm text-gray-400 truncate">
                         {chat.messages?.[chat.messages.length - 1]?.content || t('adChat.noMessage')}
                       </p>
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-1 sm:mt-2">
                         {chat.is_priority && <Star className="h-3 w-3 text-yellow-500" fill="currentColor" />}
-                        <span className="text-xs text-gray-500">{chat.ad_platform}</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500 truncate">{chat.ad_platform}</span>
                       </div>
                     </div>
                   ))
@@ -418,35 +421,35 @@ const AdChat = () => {
             </div>
 
             {/* Chat Details */}
-            <div className={`lg:col-span-3 ${showMobileChat ? 'block' : 'hidden lg:block'}`}>
+            <div className={`lg:col-span-3 flex flex-col ${showMobileChat ? 'flex' : 'hidden lg:flex'}`}>
               {selectedChat ? (
                 <>
-                  <CardHeader className="border-b px-4 py-3">
+                  <CardHeader className="border-b px-2 sm:px-4 py-2 sm:py-3 flex-shrink-0">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="lg:hidden flex-shrink-0"
+                          className="lg:hidden flex-shrink-0 h-8 w-8 p-0"
                           onClick={() => setShowMobileChat(false)}
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <div className="min-w-0">
-                          <CardTitle className="text-lg truncate">{selectedChat.visitor_name || t('adChat.anonymousVisitor')}</CardTitle>
-                          <div className="flex flex-col gap-x-4 gap-y-1 lg:flex-row">
-                            <p className="text-sm text-gray-400 truncate">{selectedChat.visitor_email || t('adChat.emailNotProvided')}</p>
+                        <div className="min-w-0 flex-1">
+                          <CardTitle className="text-base sm:text-lg truncate">{selectedChat.visitor_name || t('adChat.anonymousVisitor')}</CardTitle>
+                          <div className="flex flex-col gap-y-1">
+                            <p className="text-xs sm:text-sm text-gray-400 truncate">{selectedChat.visitor_email || t('adChat.emailNotProvided')}</p>
                             {selectedChat.visitor_phone && (
-                              <p className="text-sm text-gray-400 truncate">{selectedChat.visitor_phone}</p>
+                              <p className="text-xs sm:text-sm text-gray-400 truncate">{selectedChat.visitor_phone}</p>
                             )}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         {!selectedChat.converted_to_contact && !isAlreadyContact && (
-                          <Button onClick={handleConvertToContact} variant="outline" size="sm" className="h-8" disabled={loading}>
-                            <UserCheck className="h-4 w-4 mr-1 sm:mr-2" />
-                            <span className="text-xs sm:text-sm">{t('adChat.convertToLead')}</span>
+                          <Button onClick={handleConvertToContact} variant="outline" size="sm" className="h-7 sm:h-8 text-xs" disabled={loading}>
+                            <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                            <span className="hidden sm:inline">{t('adChat.convertToLead')}</span>
                           </Button>
                         )}
                         <Badge variant="secondary" className="text-[10px] h-5 uppercase tracking-wider">{selectedChat.status}</Badge>
@@ -454,22 +457,22 @@ const AdChat = () => {
                     </div>
                   </CardHeader>
 
-                  <CardContent className="p-4">
+                  <CardContent className="p-2 sm:p-4 flex-1 flex flex-col min-h-0">
                     {/* Messages */}
-                    <div className="space-y-4 mb-4 max-h-[calc(100vh-24rem)] overflow-y-auto">
+                    <div className="space-y-2 sm:space-y-4 mb-2 sm:mb-4 flex-1 overflow-y-auto">
                       {selectedChat.messages?.map((msg, idx) => (
                         <div
                           key={idx}
                           className={`flex ${msg.sender === 'visitor' ? 'justify-start' : 'justify-end'}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-lg ${msg.sender === 'visitor'
+                            className={`max-w-[85%] sm:max-w-[80%] p-2 sm:p-3 rounded-lg ${msg.sender === 'visitor'
                               ? 'bg-gray-800'
                               : 'bg-primary text-white'
                               }`}
                           >
-                            <p className="text-sm">{msg.content}</p>
-                            <p className="text-xs opacity-70 mt-1">
+                            <p className="text-xs sm:text-sm break-words">{msg.content}</p>
+                            <p className="text-[10px] sm:text-xs opacity-70 mt-1">
                               {new Date(msg.timestamp).toLocaleString(i18n.language)}
                             </p>
                           </div>
@@ -478,15 +481,16 @@ const AdChat = () => {
                     </div>
 
                     {/* Message Form */}
-                    <form onSubmit={handleSendMessage} className="flex gap-2">
+                    <form onSubmit={handleSendMessage} className="flex gap-2 flex-shrink-0">
                       <Input
                         value={message}
                         onChange={(e) => setMessage(e.target.value)}
                         placeholder={t('adChat.yourResponse')}
-                        className="flex-1"
+                        className="flex-1 text-sm"
+                        size="sm"
                       />
-                      <Button type="submit" disabled={loading || !message.trim()}>
-                        <Send className="h-4 w-4" />
+                      <Button type="submit" disabled={loading || !message.trim()} size="sm" className="h-8 sm:h-10">
+                        <Send className="h-3 w-3 sm:h-4 sm:w-4" />
                       </Button>
                     </form>
                   </CardContent>

@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { CreditCard, Key, Save, Eye, EyeOff } from 'lucide-react';
+import { CreditCard, Key, Save, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { useAuth } from '@/contexts/AuthContext';
 
 const API_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
+const API = `${API_URL}/api`;
 
 const PaymentSettings = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const token = localStorage.getItem('token');
+  const planId = searchParams.get('plan_id');
   const [loading, setLoading] = useState(false);
   const [showKeys, setShowKeys] = useState({
     stripe_secret: false,
@@ -34,7 +41,7 @@ const PaymentSettings = () => {
 
   const fetchPaymentConfig = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/user/payment-config`, {
+      const response = await axios.get(`${API}/user/payment-config`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.data) {
@@ -48,21 +55,82 @@ const PaymentSettings = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
+      // Validate that Stripe keys are provided if plan_id exists
+      if (planId && (!paymentConfig.stripe_secret_key || !paymentConfig.stripe_publishable_key)) {
+        toast({
+          title: t('payments.error') || 'Erreur',
+          description: 'Veuillez configurer vos clés Stripe (clé secrète et clé publique) pour continuer.',
+          variant: 'destructive'
+        });
+        setLoading(false);
+        return;
+      }
+      
       await axios.post(
-        `${API_URL}/api/user/payment-config`,
+        `${API}/user/payment-config`,
         paymentConfig,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
       toast({
-        title: t('payments.configSaved'),
-        description: t('payments.configSavedDesc')
+        title: t('payments.configSaved') || 'Configuration enregistrée',
+        description: t('payments.configSavedDesc') || 'Vos paramètres de paiement ont été enregistrés avec succès.'
       });
+      
+      // If plan_id is provided, automatically trigger payment flow after saving
+      if (planId && paymentConfig.stripe_secret_key && paymentConfig.stripe_publishable_key) {
+        console.log('✅ Stripe configured, triggering payment flow for plan_id:', planId);
+        
+        // Wait a moment for the config to be saved
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        try {
+          // Fetch plan details
+          const planResponse = await axios.get(`${API}/pricing-plans/${planId}`);
+          const plan = planResponse.data;
+          
+          if (plan && plan.price > 0) {
+            console.log('💳 Creating Stripe checkout for plan:', plan.name);
+            
+            // Create Stripe checkout session
+            const checkoutResponse = await axios.post(
+              `${API}/stripe/create-subscription-checkout`,
+              {
+                plan_id: planId,
+                customer_email: user?.email || '',
+                customer_name: user?.name || '',
+                origin_url: window.location.origin
+              },
+              {
+                headers: { Authorization: `Bearer ${token}` }
+              }
+            );
+            
+            if (checkoutResponse.data?.url) {
+              console.log('🚀 Redirecting to Stripe checkout');
+              toast({
+                title: '✅ Configuration réussie',
+                description: 'Redirection vers le paiement...',
+              });
+              // Redirect to Stripe checkout
+              window.location.href = checkoutResponse.data.url;
+              return;
+            }
+          }
+        } catch (paymentError) {
+          console.error('Error creating checkout:', paymentError);
+          toast({
+            title: '⚠️ Erreur',
+            description: paymentError.response?.data?.detail || 'Erreur lors de la création de la session de paiement. Veuillez réessayer.',
+            variant: 'destructive'
+          });
+        }
+      }
     } catch (error) {
       console.error('Error saving payment config:', error);
       toast({
-        title: t('payments.error'),
-        description: t('payments.errorSaving'),
+        title: t('payments.error') || 'Erreur',
+        description: t('payments.errorSaving') || error.response?.data?.detail || 'Erreur lors de l\'enregistrement',
         variant: 'destructive'
       });
     } finally {
@@ -86,6 +154,26 @@ const PaymentSettings = () => {
           <p className="text-gray-400">{t('payments.paymentSettingsSubtitle')}</p>
         </div>
       </div>
+
+      {/* Show alert if plan_id is provided */}
+      {planId && (
+        <Card className="glass border-yellow-500/30 bg-yellow-500/10">
+          <CardContent className="pt-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-yellow-400 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-yellow-400 mb-1">
+                  Configuration requise pour votre abonnement
+                </h3>
+                <p className="text-sm text-yellow-300/80">
+                  Pour compléter votre abonnement, veuillez configurer vos clés Stripe ci-dessous. 
+                  Une fois configurées, vous serez automatiquement redirigé vers le paiement.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stripe Configuration */}
       <Card className="glass border-primary/20">
@@ -215,10 +303,10 @@ const PaymentSettings = () => {
           className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
           size="lg"
         >
-          {loading ? t('payments.saving') : (
+          {loading ? (planId ? 'Configuration en cours...' : t('payments.saving')) : (
             <>
               <Save className="mr-2 h-5 w-5" />
-              {t('payments.save')}
+              {planId ? 'Configurer et continuer vers le paiement' : t('payments.save')}
             </>
           )}
         </Button>

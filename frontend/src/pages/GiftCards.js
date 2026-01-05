@@ -501,12 +501,13 @@ const GiftCards = () => {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-3 border-t border-gray-700 justify-end">
+                <div className="flex gap-2 pt-3 border-t border-gray-700 justify-end flex-wrap">
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => handleEdit(card)}
                     title={t('common.edit') || 'Edit'}
+                    className="h-8 w-8 p-0"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -515,6 +516,7 @@ const GiftCards = () => {
                     variant="outline"
                     onClick={() => handleDuplicate(card)}
                     title={t('common.duplicate') || 'Duplicate'}
+                    className="h-8 w-8 p-0"
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -523,6 +525,7 @@ const GiftCards = () => {
                     variant="outline"
                     onClick={() => handleShare(card)}
                     title={t('common.share') || 'Share'}
+                    className="h-8 w-8 p-0"
                   >
                     <Share2 className="h-4 w-4" />
                   </Button>
@@ -531,7 +534,7 @@ const GiftCards = () => {
                     variant="outline"
                     onClick={() => handleDelete(card)}
                     title={t('common.delete') || 'Delete'}
-                    className="text-red-500 hover:text-red-400 hover:bg-red-500/10"
+                    className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -36,12 +36,16 @@ const ImageUploader = ({ value, onChange, label = "Image", className = "" }) => 
                 body: formData
             });
 
+            // Clone response before reading to avoid "Failed to execute 'clone' on 'Response'" error
+            // This ensures we can read the response body even if it's been consumed elsewhere
+            const responseClone = response.clone();
+
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
+                const errorData = await responseClone.json().catch(() => ({}));
                 throw new Error(errorData.detail || 'Upload failed');
             }
 
-            const data = await response.json();
+            const data = await responseClone.json();
             onChange(data.url);
             toast.success('Image uploaded successfully');
         } catch (error) {

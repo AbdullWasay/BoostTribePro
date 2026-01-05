@@ -457,9 +457,9 @@ const Contacts = () => {
   return (
     <div className="space-y-4 sm:space-y-6 pb-6" data-testid="contacts-page">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2" data-testid="contacts-title">{t('contacts.title')}</h1>
+          <h1 className="text-2xl sm:text-3xl md:text-3xl xl:text-4xl font-bold mb-2" data-testid="contacts-title">{t('contacts.title')}</h1>
           <p className="text-sm sm:text-base text-gray-400">
             {contacts.length} contacts
             {selectedContacts.length > 0 && (
@@ -469,7 +469,7 @@ const Contacts = () => {
             )}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <div className="flex flex-wrap gap-2 w-full xl:w-auto shrink-0">
           <Button
             onClick={() => setShowAddDialog(true)}
             className="bg-primary hover:bg-primary/90 glow"

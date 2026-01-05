@@ -502,9 +502,9 @@ const Catalog = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           {filteredItems.map((item) => (
-            <Card key={item.id} className="glass border-primary/20 overflow-hidden w-full">
+            <Card key={item.id} className="glass border-primary/20 overflow-hidden w-full flex flex-col">
               {item.image_url && (
                 <div className="h-40 sm:h-48 bg-muted overflow-hidden relative">
                   {(() => {
@@ -603,34 +603,34 @@ const Catalog = () => {
                   <Package className="h-12 w-12 sm:h-16 sm:w-16 text-primary/50" />
                 </div>
               )}
-              <CardHeader className="p-4 sm:p-6">
+              <CardHeader className="p-3 sm:p-4 lg:p-6 flex-shrink-0">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base sm:text-lg mb-2 break-words">{item.title}</CardTitle>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <Badge variant="outline" className="border-primary/30 text-xs">
+                    <CardTitle className="text-sm sm:text-base lg:text-lg mb-2 break-words line-clamp-2">{item.title}</CardTitle>
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                      <Badge variant="outline" className="border-primary/30 text-[10px] sm:text-xs">
                         {getCategoryIcon(item.category)}
                         <span className="ml-1">{getCategoryLabel(item.category)}</span>
                       </Badge>
-                      <Badge className={`text-xs ${item.is_published ? 'bg-green-500' : 'bg-gray-500'}`}>
+                      <Badge className={`text-[10px] sm:text-xs ${item.is_published ? 'bg-green-500' : 'bg-gray-500'}`}>
                         {item.is_published ? t('catalog.published') : t('catalog.draft')}
                       </Badge>
                     </div>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 sm:p-6 pt-0">
-                <p className="text-xs sm:text-sm text-gray-400 mb-4 line-clamp-2">
+              <CardContent className="p-3 sm:p-4 lg:p-6 pt-0 flex-1 flex flex-col">
+                <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4 line-clamp-2 break-words">
                   {item.description}
                 </p>
 
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                  <div className="text-xl sm:text-2xl font-bold text-primary">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold text-primary">
                     {item.price} {item.currency}
                   </div>
                   {item.max_attendees && (
                     <div className="text-xs sm:text-sm text-gray-400">
-                      {item.current_attendees}/{item.max_attendees} {t('catalog.places')}
+                      {item.current_attendees || 0}/{item.max_attendees} {t('catalog.places')}
                     </div>
                   )}
                 </div>
@@ -657,24 +657,23 @@ const Catalog = () => {
                   </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="space-y-2 mt-auto">
                   {/* Action buttons */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(item)}
-                      className="flex-1 min-w-[100px] text-xs sm:text-sm"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                      title={t('catalog.edit')}
                     >
-                      <Edit className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">{t('catalog.edit')}</span>
-                      <span className="sm:hidden">{t('catalog.edit')}</span>
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewPublic(item)}
-                      className="flex-shrink-0"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                       title={t('catalog.viewPublic') || 'View Public'}
                     >
                       <ExternalLink className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -686,7 +685,7 @@ const Catalog = () => {
                         e.stopPropagation();
                         handleDuplicate(item);
                       }}
-                      className="flex-shrink-0"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                       title={t('catalog.duplicate') || 'Duplicate'}
                     >
                       <Files className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -698,7 +697,7 @@ const Catalog = () => {
                         e.stopPropagation();
                         handleDelete(item.id);
                       }}
-                      className="text-red-500 hover:text-red-600 flex-shrink-0"
+                      className="h-7 w-7 sm:h-8 sm:w-8 p-0 text-red-500 hover:text-red-600"
                       title={t('common.delete') || 'Delete'}
                     >
                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -708,44 +707,45 @@ const Catalog = () => {
                   {/* Reserve button (prominent) */}
                   {(item.category === 'course' || item.category === 'event') && (
                     <Button
-                      className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 mt-3 text-sm sm:text-base"
+                      className="w-full bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 mt-2 sm:mt-3 text-xs sm:text-sm"
+                      size="sm"
                       onClick={() => handleReserve(item)}
                     >
-                      <Calendar className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="break-words">{t('catalog.reserve')} {item.price > 0 ? `(${item.price} ${item.currency})` : `(${t('catalog.free')})`}</span>
+                      <Calendar className="mr-1.5 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="break-words text-xs sm:text-sm">{t('catalog.reserve')} {item.price > 0 ? `(${item.price} ${item.currency})` : `(${t('catalog.free')})`}</span>
                     </Button>
                   )}
 
                   {/* Share buttons */}
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-700">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-2 border-t border-gray-700">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleShareWhatsApp(item)}
-                      className="flex-1 min-w-[100px] text-xs"
+                      className="flex-1 min-w-0 text-[10px] sm:text-xs h-7 sm:h-8"
                     >
                       <MessageCircle className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">{t('catalog.whatsapp')}</span>
+                      <span className="hidden sm:inline truncate">{t('catalog.whatsapp')}</span>
                       <span className="sm:hidden">WA</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleShareEmail(item)}
-                      className="flex-1 min-w-[100px] text-xs"
+                      className="flex-1 min-w-0 text-[10px] sm:text-xs h-7 sm:h-8"
                     >
                       <Mail className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">{t('catalog.email')}</span>
+                      <span className="hidden sm:inline truncate">{t('catalog.email')}</span>
                       <span className="sm:hidden">Email</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleCopyLink(item)}
-                      className="flex-1 min-w-[100px] text-xs"
+                      className="flex-1 min-w-0 text-[10px] sm:text-xs h-7 sm:h-8"
                     >
                       <Copy className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">{t('catalog.link')}</span>
+                      <span className="hidden sm:inline truncate">{t('catalog.link')}</span>
                       <span className="sm:hidden">Link</span>
                     </Button>
                   </div>

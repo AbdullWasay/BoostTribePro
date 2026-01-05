@@ -342,23 +342,23 @@ const RemindersPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 p-4 sm:p-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-bold mb-2">🔔 {t('reminders.title')}</h1>
-          <p className="text-gray-400">{t('reminders.subtitle')}</p>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🔔 {t('reminders.title')}</h1>
+          <p className="text-sm sm:text-base text-gray-400">{t('reminders.subtitle')}</p>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="glass border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400">{t('reminders.activeReminders')}</CardTitle>
+            <CardTitle className="text-xs sm:text-sm text-gray-400 break-words">{t('reminders.activeReminders')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-primary">
+            <div className="text-2xl sm:text-3xl font-bold text-primary">
               {reminders.filter(r => r.status === 'pending').length}
             </div>
           </CardContent>
@@ -366,10 +366,10 @@ const RemindersPage = () => {
 
         <Card className="glass border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400">{t('reminders.sent')}</CardTitle>
+            <CardTitle className="text-xs sm:text-sm text-gray-400 break-words">{t('reminders.sent')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-500">
+            <div className="text-2xl sm:text-3xl font-bold text-green-500">
               {reminders.filter(r => r.status === 'sent').length}
             </div>
           </CardContent>
@@ -377,10 +377,10 @@ const RemindersPage = () => {
 
         <Card className="glass border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400">{t('reminders.automations')}</CardTitle>
+            <CardTitle className="text-xs sm:text-sm text-gray-400 break-words">{t('reminders.automations')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-purple-500">
+            <div className="text-2xl sm:text-3xl font-bold text-purple-500">
               {automationRules.filter(r => r.is_active).length}
             </div>
           </CardContent>
@@ -388,11 +388,11 @@ const RemindersPage = () => {
 
         <Card className="glass border-primary/20">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm text-gray-400">{t('reminders.totalExecutions')}</CardTitle>
+            <CardTitle className="text-xs sm:text-sm text-gray-400 break-words">{t('reminders.totalExecutions')}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-500">
-              {automationRules.reduce((sum, r) => sum + r.execution_count, 0)}
+            <div className="text-2xl sm:text-3xl font-bold text-blue-500">
+              {automationRules.reduce((sum, r) => sum + (r.execution_count || 0), 0)}
             </div>
           </CardContent>
         </Card>
@@ -400,30 +400,34 @@ const RemindersPage = () => {
 
       {/* Tabs */}
       <Tabs defaultValue="reminders" className="w-full">
-        <TabsList className="glass">
-          <TabsTrigger value="reminders" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            Rappels
+        <TabsList className="glass w-full sm:w-auto flex-wrap">
+          <TabsTrigger value="reminders" className="flex items-center gap-2 text-xs sm:text-sm">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{t('reminders.title')}</span>
+            <span className="sm:hidden">Rappels</span>
           </TabsTrigger>
-          <TabsTrigger value="automation" className="flex items-center gap-2">
-            <Zap className="h-4 w-4" />
-            Automatisations
+          <TabsTrigger value="automation" className="flex items-center gap-2 text-xs sm:text-sm">
+            <Zap className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{t('reminders.automationRules')}</span>
+            <span className="sm:hidden">Auto</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Notifications Auto
+          <TabsTrigger value="notifications" className="flex items-center gap-2 text-xs sm:text-sm">
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">{t('reminders.sendNow')}</span>
+            <span className="sm:hidden">Notif</span>
           </TabsTrigger>
         </TabsList>
 
         {/* Reminders Tab */}
-        <TabsContent value="reminders" className="space-y-4">
+        <TabsContent value="reminders" className="space-y-4 mt-4">
           <div className="flex justify-end">
             <Button
               onClick={() => setShowReminderDialog(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-600"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 text-xs sm:text-sm"
+              size="sm"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau rappel
+              <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              {t('reminders.createReminder')}
             </Button>
           </div>
 
@@ -439,16 +443,18 @@ const RemindersPage = () => {
               {reminders.map((reminder) => (
                 <Card key={reminder.id} className="glass border-primary/20">
                   <CardContent className="pt-6">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold">{reminder.title}</h3>
-                          {getStatusBadge(reminder.status)}
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
+                          <h3 className="text-base sm:text-lg font-semibold break-words">{reminder.title}</h3>
+                          <div className="shrink-0">
+                            {getStatusBadge(reminder.status)}
+                          </div>
                         </div>
                         
-                        <p className="text-gray-400 text-sm mb-3">{reminder.description}</p>
+                        <p className="text-gray-400 text-sm mb-3 break-words">{reminder.description}</p>
                         
-                        <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                           <span className="flex items-center gap-1 text-gray-500">
                             <Calendar className="h-4 w-4" />
                             {new Date(reminder.scheduled_at).toLocaleString('fr-FR')}
@@ -490,14 +496,16 @@ const RemindersPage = () => {
         </TabsContent>
 
         {/* Automation Tab */}
-        <TabsContent value="automation" className="space-y-4">
+        <TabsContent value="automation" className="space-y-4 mt-4">
           <div className="flex justify-end">
             <Button
               onClick={() => setShowRuleDialog(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-600"
+              className="bg-gradient-to-r from-pink-500 to-purple-600 text-xs sm:text-sm"
+              size="sm"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle règle
+              <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">{t('reminders.automationRules')}</span>
+              <span className="sm:hidden">Nouvelle règle</span>
             </Button>
           </div>
 
@@ -574,12 +582,12 @@ const RemindersPage = () => {
         </TabsContent>
 
         {/* Notifications Auto Tab */}
-        <TabsContent value="notifications" className="space-y-4">
+        <TabsContent value="notifications" className="space-y-4 mt-4">
           <Card className="glass border-primary/20">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5 text-primary" />
-                Rappels Automatiques de Cours
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Send className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <span className="break-words">{t('reminders.sendNow')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

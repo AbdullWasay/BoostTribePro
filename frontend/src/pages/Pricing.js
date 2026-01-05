@@ -6,6 +6,8 @@ import axios from 'axios';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -13,8 +15,11 @@ const API = `${BACKEND_URL}/api`;
 const Pricing = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const { toast } = useToast();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processingPlan, setProcessingPlan] = useState(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -30,8 +35,91 @@ const Pricing = () => {
     fetchPlans();
   }, []);
 
-  const handleSubscribe = (planName) => {
-    navigate('/register');
+  const handleSubscribe = async (plan) => {
+    console.log('handleSubscribe called with plan:', plan);
+    console.log('Plan ID:', plan.id);
+    console.log('User logged in:', !!user);
+    
+    if (!plan.id) {
+      console.error('Plan ID is missing!', plan);
+      return;
+    }
+    
+    // If user is not logged in, redirect to registration
+    if (!user || !token) {
+      console.log('User not logged in, redirecting to registration...');
+      navigate(`/register?plan_id=${plan.id}`);
+      return;
+    }
+    
+    // User is logged in - proceed directly to payment
+    console.log('User is logged in, proceeding to payment...');
+    setProcessingPlan(plan.id);
+    
+    try {
+      // Check if it's a free plan
+      if (plan.price === 0) {
+        toast({
+          title: 'Plan gratuit',
+          description: 'Ce plan est gratuit. Vous pouvez l\'activer depuis votre profil.',
+        });
+        setProcessingPlan(null);
+        navigate('/profile');
+        return;
+      }
+      
+      // Create Stripe checkout session for logged-in user
+      const checkoutResponse = await axios.post(
+        `${API}/stripe/create-subscription-checkout`,
+        {
+          plan_id: plan.id,
+          customer_email: user.email,
+          customer_name: user.name,
+          origin_url: window.location.origin
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      console.log('Checkout response:', checkoutResponse.data);
+      
+      if (checkoutResponse.data?.url) {
+        console.log('Redirecting to Stripe checkout:', checkoutResponse.data.url);
+        // Redirect to Stripe checkout
+        window.location.href = checkoutResponse.data.url;
+        return;
+      } else {
+        throw new Error('No checkout URL received from server');
+      }
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      const errorMessage = error.response?.data?.detail || error.message || '';
+      const errorMessageLower = errorMessage.toLowerCase();
+      
+      // Check if Stripe is not configured
+      if (
+        errorMessageLower.includes('stripe not configured') ||
+        errorMessageLower.includes('configure stripe keys') ||
+        errorMessageLower.includes('stripe') && errorMessageLower.includes('payment settings')
+      ) {
+        console.log('Stripe not configured, redirecting to payment settings...');
+        toast({
+          title: 'Configuration requise',
+          description: 'Veuillez configurer vos clés Stripe pour compléter votre abonnement.',
+          variant: "default"
+        });
+        navigate(`/payment-settings?plan_id=${plan.id}`);
+      } else {
+        toast({
+          title: 'Erreur',
+          description: errorMessage || 'Erreur lors de la création de la session de paiement. Veuillez réessayer.',
+          variant: "destructive"
+        });
+      }
+    } finally {
+      setProcessingPlan(null);
+    }
   };
 
   const getLocalizedPlan = (plan) => {
@@ -237,17 +325,20 @@ const Pricing = () => {
 
               <CardFooter>
                 <Button
-                  onClick={() => handleSubscribe(lp.name)}
-                  className={
-                    `w-full ${lp.highlighted
-                      ? 'bg-primary hover:bg-primary/90 glow'
-                      : 'bg-muted hover:bg-muted/80'
-                    }`
-                  }
+                  onClick={() => handleSubscribe(plan)}
+                  disabled={processingPlan === plan.id}
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 glow border-primary text-white"
                   size="lg"
                   data-testid={`plan-${index}-cta`}
                 >
-                  {lp.cta}
+                  {processingPlan === plan.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {t('common.loading') || 'Chargement...'}
+                    </>
+                  ) : (
+                    lp.cta
+                  )}
                 </Button>
               </CardFooter>
             </Card>

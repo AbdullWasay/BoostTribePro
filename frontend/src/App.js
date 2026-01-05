@@ -26,6 +26,7 @@ import AdminUsers from '@/pages/AdminUsers';
 import Catalog from '@/pages/Catalog';
 import Reservations from '@/pages/Reservations';
 import ReservationSuccess from '@/pages/ReservationSuccess';
+import SubscriptionSuccess from '@/pages/SubscriptionSuccess';
 import Reminders from '@/pages/Reminders';
 import GiftCards from '@/pages/GiftCards';
 import Discounts from '@/pages/Discounts';
@@ -56,6 +57,7 @@ function App() {
             <Route path="/p/:slug" element={<ProductPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/reservation-success" element={<ReservationSuccess />} />
+            <Route path="/subscription-success" element={<SubscriptionSuccess />} />
             <Route path="/chat-public" element={<AdChatPublic />} />
             <Route path="/chat-public/:userId" element={<AdChatPublicPage />} />
             <Route path="/chat/:slug" element={<AdChatPublic />} />
