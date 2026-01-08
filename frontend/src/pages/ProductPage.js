@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ const ProductPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useTranslation();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -403,7 +405,7 @@ const ProductPage = () => {
                       onClick={handleCopyLink}
                     >
                       <Copy className="mr-2 h-4 w-4" />
-                      Copier le lien
+                      {t('catalog.copyLink')}
                     </Button>
                   </div>
                 </div>

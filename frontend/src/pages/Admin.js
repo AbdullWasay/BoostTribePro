@@ -288,11 +288,17 @@ const Admin = () => {
                 <CardContent className="pt-6">
                   <h3 className="font-semibold mb-3 text-white">{t('admin.whatsapp.guideTitle')}</h3>
                   <ol className="text-sm text-gray-300 space-y-2 list-decimal list-inside">
-                    <li>{t('admin.whatsapp.step1')} - <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t('admin.whatsapp.metaLink')}</a></li>
+                    <li>{t('admin.whatsapp.step1')} - <a href="https://business.facebook.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-words">{t('admin.whatsapp.metaLink')}</a></li>
                     <li>{t('admin.whatsapp.step2')}</li>
                     <li>{t('admin.whatsapp.step3')}</li>
                     <li>{t('admin.whatsapp.step4')}</li>
-                    <li>{t('admin.whatsapp.step5')}: <code className="text-xs bg-black/30 px-2 py-1 rounded">{BACKEND_URL}/api/whatsapp/webhook</code></li>
+                    <li>
+                      {t('admin.whatsapp.step5')}:
+                      {" "}
+                      <code className="text-xs bg-black/30 px-2 py-1 rounded break-all inline-block max-w-full">
+                        {BACKEND_URL}/api/whatsapp/webhook
+                      </code>
+                    </li>
                     <li>{t('admin.whatsapp.step6')}</li>
                   </ol>
                 </CardContent>
@@ -504,11 +510,11 @@ const Admin = () => {
       </Tabs>
 
       {/* Save Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-center sm:justify-end mt-4">
         <Button
           onClick={handleSaveSettings}
           disabled={saving}
-          className="bg-primary hover:bg-primary/90 glow"
+          className="bg-primary hover:bg-primary/90 glow w-full sm:w-auto max-w-md"
           size="lg"
           data-testid="save-settings-button"
         >

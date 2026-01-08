@@ -245,7 +245,7 @@ const resources = {
         title: 'Calendar',
         subtitle: 'Planifiez et visualisez vos campagnes',
         campaignCalendar: 'Calendrier des campagnes',
-        scheduledCampaigns: 'Campagnes prévues le {date}',
+        scheduledCampaigns: 'Campagnes prévues le {{date}}',
         noCampaigns: 'Aucune campagne prévue ce jour',
         allScheduled: 'Toutes les campagnes programmées',
         noScheduledCampaigns: 'Aucune campagne programmée',
@@ -543,7 +543,11 @@ const resources = {
         testLink: 'Tester le lien',
         duplicate: 'Dupliquer',
         itemDuplicated: 'Article dupliqué avec succès',
-        copy: 'Copie'
+        copy: 'Copie',
+        copyLink: 'Copier le lien',
+        link: 'Lien',
+        viewPublicStore: 'Voir la boutique publique',
+        viewPublic: 'Voir la page publique'
       },
       reservations: {
         title: 'Réservations',
@@ -801,7 +805,9 @@ const resources = {
           description: 'Description',
           updateSuccess: 'Plan modifié avec succès',
           updateError: 'Erreur modification',
-          loading: 'Chargement...'
+          loading: 'Chargement...',
+          resetDefaults: 'Réinitialiser aux valeurs par défaut',
+          addPlan: 'Ajouter un plan'
         }
       },
       adChat: {
@@ -1289,7 +1295,7 @@ const resources = {
         title: 'Calendar',
         subtitle: 'Plan and visualize your campaigns',
         campaignCalendar: 'Campaign calendar',
-        scheduledCampaigns: 'Campaigns scheduled for {date}',
+        scheduledCampaigns: 'Campaigns scheduled for {{date}}',
         noCampaigns: 'No campaigns scheduled for this day',
         allScheduled: 'All scheduled campaigns',
         noScheduledCampaigns: 'No scheduled campaigns',
@@ -1563,7 +1569,11 @@ const resources = {
         testLink: 'Test link',
         duplicate: 'Duplicate',
         itemDuplicated: 'Item duplicated successfully',
-        copy: 'Copy'
+        copy: 'Copy',
+        copyLink: 'Copy Link',
+        link: 'Link',
+        viewPublicStore: 'View Public Store',
+        viewPublic: 'View Public Page'
       },
       reservations: {
         title: 'Reservations',
@@ -1791,7 +1801,9 @@ const resources = {
           description: 'Description',
           updateSuccess: 'Plan modified successfully',
           updateError: 'Modification error',
-          loading: 'Loading...'
+          loading: 'Loading...',
+          resetDefaults: 'Reset to Defaults',
+          addPlan: 'Add Plan'
         }
       },
       adChat: {
@@ -2279,7 +2291,7 @@ const resources = {
         title: 'Kalender',
         subtitle: 'Planen und visualisieren Sie Ihre Kampagnen',
         campaignCalendar: 'Kampagnenkalender',
-        scheduledCampaigns: 'Geplante Kampagnen für {date}',
+        scheduledCampaigns: 'Geplante Kampagnen für {{date}}',
         noCampaigns: 'Keine Kampagnen für diesen Tag geplant',
         allScheduled: 'Alle geplanten Kampagnen',
         noScheduledCampaigns: 'Keine geplanten Kampagnen',
@@ -2577,7 +2589,11 @@ const resources = {
         testLink: 'Link testen',
         duplicate: 'Duplizieren',
         itemDuplicated: 'Artikel erfolgreich dupliziert',
-        copy: 'Kopie'
+        copy: 'Kopie',
+        copyLink: 'Link kopieren',
+        link: 'Link',
+        viewPublicStore: 'Öffentlichen Shop anzeigen',
+        viewPublic: 'Öffentliche Seite anzeigen'
       },
       reservations: {
         title: 'Reservierungen',
@@ -2828,7 +2844,9 @@ const resources = {
           description: 'Beschreibung',
           updateSuccess: 'Plan erfolgreich geändert',
           updateError: 'Fehler beim Ändern',
-          loading: 'Wird geladen...'
+          loading: 'Wird geladen...',
+          resetDefaults: 'Auf Standardwerte zurücksetzen',
+          addPlan: 'Plan hinzufügen'
         }
       },
       adChat: {

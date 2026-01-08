@@ -13,11 +13,12 @@ export default async function handler(req, res) {
       return res.status(404).send(errorHtml);
     }
 
-    // Detect if this is a crawler/bot
+    // Detect if this is a crawler/bot (especially WhatsApp)
+    // WhatsApp uses "facebookexternalhit" or "WhatsApp" in user-agent
     const userAgent = req.headers['user-agent'] || '';
-    const isBot = /bot|crawler|spider|crawling|facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype/i.test(userAgent);
+    const isBot = /bot|crawler|spider|crawling|facebookexternalhit|WhatsApp|whatsapp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype|Facebot|Meta/i.test(userAgent);
     
-    console.log(`[Product Preview] Request from: ${userAgent.substring(0, 100)}`);
+    console.log(`[Product Preview] Request from: ${userAgent.substring(0, 200)}`);
     console.log(`[Product Preview] Is bot: ${isBot}`);
     console.log(`[Product Preview] Slug: ${slug}`);
 
@@ -139,17 +140,12 @@ export default async function handler(req, res) {
         .replace(/'/g, '&#x27;');
     };
 
-    // Generate redirect script (only for browsers, not crawlers)
-    const redirectScript = isBot ? '<!-- Crawler detected - no redirect needed -->' : `<script>
-        setTimeout(function() {
-            if (window.location.hash !== '#no-redirect') {
-                window.location.href = '/p/${slug}';
-            }
-        }, 1000);
-    </script>
-    <noscript>
-        <meta http-equiv="refresh" content="3; url=/p/${slug}">
-    </noscript>`;
+    // This function should only be called for bots due to vercel.json rewrites
+    // If somehow a regular browser reaches here, we'll still serve the HTML
+    // The React app will handle the route on the client side
+    const redirectScript = isBot 
+      ? '<!-- Bot detected - serving static HTML for crawler -->' 
+      : '<!-- Regular browser - meta tags already set, React app will handle routing -->';
 
     // Generate HTML with proper OG meta tags
     // IMPORTANT: Meta tags must be in the <head> and before any redirect
@@ -184,14 +180,22 @@ export default async function handler(req, res) {
     <!-- Additional meta for better WhatsApp support -->
     <meta name="robots" content="index, follow">
     
+    <!-- WhatsApp specific meta tags -->
+    <meta property="og:image:alt" content="${escapeHtml(product.title)}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    
     <!-- Visible content for crawlers (some crawlers read body content) -->
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-        .product-preview { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; }
-        .product-image { width: 100%; max-width: 500px; height: auto; border-radius: 4px; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; margin: 0; }
+        .product-preview { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .product-image { width: 100%; max-width: 500px; height: auto; border-radius: 4px; display: block; margin: 20px auto; }
+        h1 { color: #333; margin-top: 0; }
+        p { color: #666; line-height: 1.6; }
+        a { color: #007bff; text-decoration: none; }
     </style>
     
-    <!-- Redirect to React app (only for regular browsers, not crawlers) -->
+    <!-- Redirect script (only for regular browsers, not crawlers) -->
     ${redirectScript}
 </head>
 <body>
@@ -205,11 +209,27 @@ export default async function handler(req, res) {
 </body>
 </html>`;
 
-    // Set proper headers
+    // Set proper headers for WhatsApp and other crawlers
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
     
-    console.log(`[Product Preview] HTML generated successfully for ${slug}`);
+    // For bots, cache aggressively. For browsers, cache less aggressively
+    if (isBot) {
+      res.setHeader('Cache-Control', 'public, max-age=3600, s-maxage=3600');
+    } else {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    
+    // Add CORS headers if needed (some crawlers check this)
+    if (req.headers.origin) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+    
+    console.log(`[Product Preview] HTML generated successfully for ${slug} (Bot: ${isBot})`);
+    console.log(`[Product Preview] Image URL: ${productImage}`);
+    console.log(`[Product Preview] Product URL: ${productUrl}`);
+    
     return res.status(200).send(html);
   } catch (error) {
     console.error('[Product Preview] Error:', error.message);

@@ -7,23 +7,9 @@
         {
           "type": "header",
           "key": "user-agent",
-          "value": "(?i).*(facebookexternalhit|WhatsApp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype).*"
+          "value": "(?i).*(facebookexternalhit|WhatsApp|whatsapp|TwitterBot|LinkedInBot|Slackbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Baiduspider|YandexBot|DuckDuckBot|facebook|twitter|linkedin|slack|skype|Facebot|Meta|bot|crawler|spider).*"
         }
       ]
-    },
-    {
-      "source": "/p/:slug",
-      "destination": "/api/p/:slug",
-      "has": [
-        {
-          "type": "query",
-          "key": "_escaped_fragment_"
-        }
-      ]
-    },
-    {
-      "source": "/p/:slug",
-      "destination": "/api/p/:slug"
     }
   ],
   "headers": [

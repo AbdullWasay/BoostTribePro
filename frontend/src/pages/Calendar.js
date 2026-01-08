@@ -82,34 +82,32 @@ const Calendar = () => {
 
       <div className="grid gap-4 sm:gap-6 grid-cols-1 xl:grid-cols-2">
         {/* Calendar */}
-        <Card className="glass border-primary/20" data-testid="calendar-widget">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+        <Card className="glass border-primary/20 overflow-hidden" data-testid="calendar-widget">
+          <CardHeader className="p-3 sm:p-6">
+            <CardTitle className="flex items-center gap-2 text-sm sm:text-base md:text-lg">
+              <CalendarIcon className="h-4 w-4 sm:h-5 sm:w-5 text-primary shrink-0" />
               {t('calendar.campaignCalendar')}
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center p-3 sm:p-4 md:p-6">
-            <div className="w-full max-w-full overflow-x-auto -mx-2 sm:mx-0">
-              <div className="min-w-[280px] px-2 sm:px-0">
-                <CalendarComponent
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  locale={getLocale()}
-                  className="rounded-lg border-primary/20 w-full"
-                  modifiers={{
-                    scheduled: datesWithCampaigns,
-                  }}
-                  modifiersStyles={{
-                    scheduled: {
-                      backgroundColor: 'rgba(217, 28, 210, 0.3)',
-                      color: '#fff',
-                      fontWeight: 'bold',
-                    },
-                  }}
-                />
-              </div>
+          <CardContent className="flex justify-center p-2 sm:p-4 md:p-6 overflow-x-auto">
+            <div className="w-full max-w-full min-w-0">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                locale={getLocale()}
+                className="rounded-lg border-primary/20 w-full mx-auto"
+                modifiers={{
+                  scheduled: datesWithCampaigns,
+                }}
+                modifiersStyles={{
+                  scheduled: {
+                    backgroundColor: 'rgba(217, 28, 210, 0.3)',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                  },
+                }}
+              />
             </div>
           </CardContent>
         </Card>

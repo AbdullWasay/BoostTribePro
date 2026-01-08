@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Mail, MessageCircle, Sparkles, BarChart3, Users, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Mail, MessageCircle, Sparkles, BarChart3, Users, Zap, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 
 const Landing = () => {
   const { i18n } = useTranslation();
+  const navigate = useNavigate();
 
   const content = {
     fr: {
@@ -228,6 +230,16 @@ const Landing = () => {
               onClick={() => window.location.href = '/pricing'}
             >
               {t.hero.pricing}
+            </Button>
+
+            <Button
+              size="lg"
+              variant="outline"
+              className="text-lg px-8 py-6"
+              onClick={() => navigate('/catalog/public')}
+            >
+              <ShoppingBag className="mr-2 h-5 w-5" />
+              {i18n.language === 'fr' ? 'Boutique' : i18n.language === 'de' ? 'Shop' : 'Store'}
             </Button>
 
             <Dialog>

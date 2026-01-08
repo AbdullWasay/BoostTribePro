@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import i18n from 'i18next';
-import { Plus, Edit, Trash2, Eye, Package, Calendar, DollarSign, Share2, Copy, Mail, MessageCircle, ExternalLink, Play, Copy as CopyIcon, Files } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Package, Calendar, DollarSign, Share2, Copy, Mail, MessageCircle, ExternalLink, Play, Copy as CopyIcon, Files, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,7 @@ const Catalog = () => {
   const { token } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -463,16 +465,26 @@ const Catalog = () => {
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">📦 Catalogue</h1>
           <p className="text-sm sm:text-base text-gray-400">{t('catalog.subtitle')}</p>
         </div>
-        <Button
-          onClick={() => {
-            resetForm();
-            setShowDialog(true);
-          }}
-          className="bg-primary hover:bg-primary/90 glow w-full sm:w-auto"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          {t('catalog.createItem')}
-        </Button>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => navigate('/catalog/public')}
+            className="w-full sm:w-auto"
+          >
+            <ShoppingBag className="mr-2 h-4 w-4" />
+            {t('catalog.viewPublicStore') || 'Voir la boutique publique'}
+          </Button>
+          <Button
+            onClick={() => {
+              resetForm();
+              setShowDialog(true);
+            }}
+            className="bg-primary hover:bg-primary/90 glow w-full sm:w-auto"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            {t('catalog.createItem')}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -746,7 +758,7 @@ const Catalog = () => {
                     >
                       <Copy className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                       <span className="hidden sm:inline truncate">{t('catalog.link')}</span>
-                      <span className="sm:hidden">Link</span>
+                      <span className="sm:hidden">{t('catalog.link')}</span>
                     </Button>
                   </div>
                 </div>
@@ -767,44 +779,45 @@ const Catalog = () => {
           }
         }}
       >
-        <DialogContent className="glass max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
+        <DialogContent className="glass max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader className="pb-4">
+            <DialogTitle className="text-lg sm:text-xl">
               {editingItem ? t('catalog.editItem') : t('catalog.createItem')}
             </DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div>
-              <Label htmlFor="title">{t('catalog.title_label')}</Label>
+              <Label htmlFor="title" className="text-sm sm:text-base">{t('catalog.title_label')}</Label>
               <Input
                 id="title"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="mt-1 h-9 sm:h-10"
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="description">{t('catalog.description')}</Label>
+              <Label htmlFor="description" className="text-sm sm:text-base">{t('catalog.description')}</Label>
               <textarea
                 id="description"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="w-full min-h-[100px] p-3 rounded-md bg-background border border-primary/20 text-white"
+                className="w-full min-h-[80px] sm:min-h-[100px] p-2 sm:p-3 rounded-md bg-background border border-primary/20 text-white text-sm sm:text-base mt-1"
                 required
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category">{t('catalog.category')}</Label>
+                <Label htmlFor="category" className="text-sm sm:text-base">{t('catalog.category')}</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) => setFormData({ ...formData, category: value })}
                   open={categorySelectOpen}
                   onOpenChange={setCategorySelectOpen}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1 h-9 sm:h-10">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -816,14 +829,15 @@ const Catalog = () => {
               </div>
 
               <div>
-                <Label htmlFor="price">{t('catalog.price')}</Label>
-                <div className="flex gap-2">
+                <Label htmlFor="price" className="text-sm sm:text-base">{t('catalog.price')}</Label>
+                <div className="flex flex-col sm:flex-row gap-2 mt-1">
                   <Input
                     id="price"
                     type="number"
                     step="0.01"
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="h-9 sm:h-10 flex-1"
                     required
                   />
                   <Select
@@ -832,7 +846,7 @@ const Catalog = () => {
                     open={currencySelectOpen}
                     onOpenChange={setCurrencySelectOpen}
                   >
-                    <SelectTrigger className="w-24">
+                    <SelectTrigger className="w-full sm:w-24 h-9 sm:h-10">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -859,13 +873,14 @@ const Catalog = () => {
 
             {formData.category === 'product' && (
               <div>
-                <Label htmlFor="stock_quantity">{t('catalog.stockAvailable')}</Label>
+                <Label htmlFor="stock_quantity" className="text-sm sm:text-base">{t('catalog.stockAvailable')}</Label>
                 <Input
                   id="stock_quantity"
                   type="number"
                   value={formData.stock_quantity}
                   onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
                   placeholder={t('catalog.unlimitedPlaceholder')}
+                  className="mt-1 h-9 sm:h-10"
                 />
               </div>
             )}
@@ -873,50 +888,54 @@ const Catalog = () => {
             {(formData.category === 'course' || formData.category === 'event') && (
               <>
                 <div>
-                  <Label htmlFor="max_attendees">{t('catalog.maxAttendees')}</Label>
+                  <Label htmlFor="max_attendees" className="text-sm sm:text-base">{t('catalog.maxAttendees')}</Label>
                   <Input
                     id="max_attendees"
                     type="number"
                     value={formData.max_attendees}
                     onChange={(e) => setFormData({ ...formData, max_attendees: e.target.value })}
                     placeholder={t('catalog.unlimitedPlaceholder')}
+                    className="mt-1 h-9 sm:h-10"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="event_date">{t('catalog.dateTime')}</Label>
+                  <Label htmlFor="event_date" className="text-sm sm:text-base">{t('catalog.dateTime')}</Label>
                   <Input
                     id="event_date"
                     type="datetime-local"
                     value={formData.event_date}
                     onChange={(e) => setFormData({ ...formData, event_date: e.target.value })}
+                    className="mt-1 h-9 sm:h-10"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="event_duration">{t('catalog.eventDuration')}</Label>
+                  <Label htmlFor="event_duration" className="text-sm sm:text-base">{t('catalog.eventDuration')}</Label>
                   <Input
                     id="event_duration"
                     type="number"
                     value={formData.event_duration}
                     onChange={(e) => setFormData({ ...formData, event_duration: e.target.value })}
                     placeholder="60"
+                    className="mt-1 h-9 sm:h-10"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="location">{t('catalog.location')}</Label>
+                  <Label htmlFor="location" className="text-sm sm:text-base">{t('catalog.location')}</Label>
                   <Input
                     id="location"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                     placeholder="Adresse ou Zoom/En ligne"
+                    className="mt-1 h-9 sm:h-10"
                   />
                 </div>
 
                 {/* Recurring Course Option */}
                 <div className="border-t border-primary/20 pt-4 mt-4">
-                  <div className="flex items-center space-x-3 mb-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30 hover:bg-blue-500/20 transition-colors cursor-pointer">
+                  <div className="flex items-center space-x-2 sm:space-x-3 mb-4 p-2 sm:p-3 bg-blue-500/10 rounded-lg border border-blue-500/30 hover:bg-blue-500/20 transition-colors cursor-pointer">
                     <input
                       type="checkbox"
                       id="is_recurring"
@@ -926,22 +945,22 @@ const Catalog = () => {
                         is_recurring: e.target.checked,
                         event_date: e.target.checked ? '' : formData.event_date
                       })}
-                      className="w-5 h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary"
+                      className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary shrink-0"
                     />
-                    <Label htmlFor="is_recurring" className="cursor-pointer flex-1 font-medium text-white">
+                    <Label htmlFor="is_recurring" className="cursor-pointer flex-1 font-medium text-white text-sm sm:text-base break-words">
                       {t('catalog.recurringCourseWeekly')}
                     </Label>
                   </div>
 
                   {formData.is_recurring && (
-                    <div className="space-y-4 bg-blue-500/10 p-4 rounded-lg border border-blue-500/30">
-                      <p className="text-sm text-blue-400">
+                    <div className="space-y-3 sm:space-y-4 bg-blue-500/10 p-3 sm:p-4 rounded-lg border border-blue-500/30">
+                      <p className="text-xs sm:text-sm text-blue-400 break-words">
                         {t('catalog.recurringCourseInfo')}
                       </p>
 
                       <div>
-                        <Label>{t('catalog.weekDays')}</Label>
-                        <div className="grid grid-cols-7 gap-2 mt-2">
+                        <Label className="text-sm sm:text-base mb-2 block">{t('catalog.weekDays')}</Label>
+                        <div className="grid grid-cols-7 gap-1 sm:gap-2 mt-2">
                           {[
                             { key: 'monday' },
                             { key: 'tuesday' },
@@ -962,7 +981,7 @@ const Catalog = () => {
                                     : [...currentDays, day.key];
                                   setFormData({ ...formData, recurrence_days: days });
                                 }}
-                                className={`p-2 rounded text-sm font-medium transition-colors ${currentDays.includes(day.key)
+                                className={`p-1.5 sm:p-2 rounded text-xs sm:text-sm font-medium transition-colors w-full min-h-[2rem] sm:min-h-[2.5rem] flex items-center justify-center ${currentDays.includes(day.key)
                                   ? 'bg-primary text-white'
                                   : 'bg-gray-700 text-gray-400 hover:bg-gray-600'
                                   }`}
@@ -975,13 +994,14 @@ const Catalog = () => {
                       </div>
 
                       <div>
-                        <Label htmlFor="recurrence_time">{t('catalog.courseTime')}</Label>
+                        <Label htmlFor="recurrence_time" className="text-sm sm:text-base">{t('catalog.courseTime')}</Label>
                         <Input
                           id="recurrence_time"
                           type="time"
                           value={formData.recurrence_time}
                           onChange={(e) => setFormData({ ...formData, recurrence_time: e.target.value })}
                           placeholder="19:00"
+                          className="mt-1 h-9 sm:h-10"
                         />
                       </div>
                     </div>
@@ -992,34 +1012,34 @@ const Catalog = () => {
 
             {/* Publication Options */}
             <div className="border-t border-primary/20 pt-4 space-y-3">
-              <div className="flex items-center space-x-3 p-3 bg-green-500/10 rounded-lg border border-green-500/30 hover:bg-green-500/20 transition-colors cursor-pointer">
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-green-500/10 rounded-lg border border-green-500/30 hover:bg-green-500/20 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   id="is_published"
                   checked={formData.is_published || false}
                   onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                  className="w-5 h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary shrink-0"
                 />
-                <Label htmlFor="is_published" className="cursor-pointer flex-1 font-medium text-white">
+                <Label htmlFor="is_published" className="cursor-pointer flex-1 font-medium text-white text-sm sm:text-base break-words">
                   {t('catalog.publishVisible')}
                 </Label>
               </div>
 
-              <div className="flex items-center space-x-3 p-3 bg-blue-500/10 rounded-lg border border-blue-500/30 hover:bg-blue-500/20 transition-colors cursor-pointer">
+              <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-blue-500/10 rounded-lg border border-blue-500/30 hover:bg-blue-500/20 transition-colors cursor-pointer">
                 <input
                   type="checkbox"
                   id="is_active"
                   checked={formData.is_active !== false}
                   onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-5 h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary"
+                  className="w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-primary bg-background checked:bg-primary checked:border-primary cursor-pointer accent-primary shrink-0"
                 />
-                <Label htmlFor="is_active" className="cursor-pointer flex-1 font-medium text-white">
+                <Label htmlFor="is_active" className="cursor-pointer flex-1 font-medium text-white text-sm sm:text-base break-words">
                   {t('catalog.activateReservations')}
                 </Label>
               </div>
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3 pt-4 sm:pt-6">
               <Button
                 type="button"
                 variant="outline"
@@ -1029,10 +1049,14 @@ const Catalog = () => {
                   setShowDialog(false);
                   resetForm();
                 }}
+                className="w-full sm:w-auto text-sm sm:text-base"
               >
                 {t('catalog.cancel')}
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
+              <Button 
+                type="submit" 
+                className="bg-primary hover:bg-primary/90 w-full sm:w-auto text-sm sm:text-base"
+              >
                 {editingItem ? t('catalog.update') : t('catalog.create')}
               </Button>
             </DialogFooter>
