@@ -1,0 +1,24 @@
+{
+  "rewrites": [
+    {
+      "source": "/p/:slug",
+      "destination": "/api/p/:slug"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/api/p/:slug",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/html; charset=utf-8"
+        },
+        {
+          "key": "X-Robots-Tag",
+          "value": "index, follow"
+        }
+      ]
+    }
+  ]
+}
+
