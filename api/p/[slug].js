@@ -23,54 +23,115 @@ export default async function handler(req, res) {
     console.log(`[Product Preview] Slug: ${slug}`);
 
     // Get backend URL from environment - ensure it doesn't have trailing slash
-    let backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:8001';
+    // In Vercel, we need to use the backend URL from environment variables
+    // If not set, try to infer from the request host
+    let backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : (req.headers.host ? `https://${req.headers.host}` : 'http://localhost:8001');
+    
+    // If backend URL points to Vercel frontend, try to use the actual backend URL
+    // This might need to be set as an environment variable in Vercel dashboard
+    if (backendUrl.includes('vercel.app') && !process.env.REACT_APP_BACKEND_URL && !process.env.BACKEND_URL) {
+      // Try common backend patterns or use API route
+      backendUrl = backendUrl.replace(/\.vercel\.app$/, '-backend.vercel.app');
+    }
+    
     backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
     
-    // Build API URL
-    const apiUrl = `${backendUrl}/api/catalog/public/${slug}`;
+    // Build API URL - try backend API first, fallback to same domain API route
+    let apiUrl = `${backendUrl}/api/catalog/public/${slug}`;
     
+    console.log(`[Product Preview] Backend URL: ${backendUrl}`);
     console.log(`[Product Preview] Fetching from: ${apiUrl}`);
+    console.log(`[Product Preview] Environment variables: REACT_APP_BACKEND_URL=${process.env.REACT_APP_BACKEND_URL}, BACKEND_URL=${process.env.BACKEND_URL}`);
     
     // Fetch product data from backend with timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
     
-    const response = await fetch(apiUrl, {
-      signal: controller.signal,
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'BoostTribe-Preview-Bot/1.0'
-      }
-    });
+    let response;
+    let product;
+    let fetchError = null;
     
-    clearTimeout(timeoutId);
-    
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`[Product Preview] Backend returned ${response.status} for ${slug}: ${errorText}`);
+    try {
+      response = await fetch(apiUrl, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'BoostTribe-Preview-Bot/1.0'
+        }
+      });
       
-      // Return error HTML instead of plain text
-      const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
-      const errorHtml = `<!DOCTYPE html>
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        product = await response.json();
+        console.log(`[Product Preview] Product loaded from primary API: ${product.title}`);
+      } else {
+        throw new Error(`Backend returned ${response.status}`);
+      }
+    } catch (error) {
+      clearTimeout(timeoutId);
+      fetchError = error;
+      const errorText = response ? await response.text().catch(() => 'Unknown error') : error.message;
+      console.error(`[Product Preview] Primary API failed: ${errorText}`);
+      console.error(`[Product Preview] API URL that failed: ${apiUrl}`);
+      
+      // Try fallback: fetch from same domain (in case backend API is on same domain)
+      if (req.headers.host && !apiUrl.includes(req.headers.host)) {
+        const fallbackApiUrl = `https://${req.headers.host}/api/catalog/public/${slug}`;
+        console.log(`[Product Preview] Trying fallback API URL: ${fallbackApiUrl}`);
+        
+        try {
+          const fallbackController = new AbortController();
+          const fallbackTimeout = setTimeout(() => fallbackController.abort(), 5000);
+          
+          const fallbackResponse = await fetch(fallbackApiUrl, {
+            signal: fallbackController.signal,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'BoostTribe-Preview-Bot/1.0'
+            }
+          });
+          
+          clearTimeout(fallbackTimeout);
+          
+          if (fallbackResponse.ok) {
+            product = await fallbackResponse.json();
+            console.log(`[Product Preview] Product loaded from fallback API: ${product.title}`);
+            fetchError = null; // Success, clear error
+          } else {
+            throw new Error(`Fallback also failed with status ${fallbackResponse.status}`);
+          }
+        } catch (fallbackError) {
+          console.error(`[Product Preview] Fallback API also failed: ${fallbackError.message}`);
+        }
+      }
+      
+      // If both failed, return error HTML
+      if (!product) {
+        const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+        const errorHtml = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Product Not Found</title>
     <meta property="og:title" content="Product Not Found">
-    <meta property="og:description" content="The requested product could not be found">
+    <meta property="og:description" content="The requested product could not be found. Please ensure REACT_APP_BACKEND_URL or BACKEND_URL environment variable is set in Vercel.">
     <meta property="og:image" content="${baseUrl}/logo512.png">
+    <meta property="og:url" content="${baseUrl}/p/${slug}">
+    <meta property="og:type" content="product">
 </head>
 <body>
     <h1>Product Not Found</h1>
-    <p>Backend returned status ${response.status}</p>
-    <p>API URL: ${apiUrl}</p>
     <p>Error: ${errorText}</p>
+    <p>API URL tried: ${apiUrl}</p>
+    <p>Please ensure REACT_APP_BACKEND_URL or BACKEND_URL environment variable is set in Vercel.</p>
 </body>
 </html>`;
-      return res.status(404).send(errorHtml);
+        return res.status(404).send(errorHtml);
+      }
     }
-
-    const product = await response.json();
     console.log(`[Product Preview] Product loaded: ${product.title}, image_url: ${product.image_url || 'none'}`);
 
     // Extract image URL and handle YouTube videos
@@ -140,12 +201,21 @@ export default async function handler(req, res) {
         .replace(/'/g, '&#x27;');
     };
 
-    // This function should only be called for bots due to vercel.json rewrites
-    // If somehow a regular browser reaches here, we'll still serve the HTML
-    // The React app will handle the route on the client side
+    // For bots (WhatsApp, Facebook, etc.), serve static HTML with meta tags (no redirect needed)
+    // For regular browsers, we need to serve HTML that doesn't break, but ideally redirects to React app
+    // However, since we're always routing /p/:slug to this function, we'll serve a minimal HTML
+    // The meta tags will be read by WhatsApp before any redirect happens
     const redirectScript = isBot 
-      ? '<!-- Bot detected - serving static HTML for crawler -->' 
-      : '<!-- Regular browser - meta tags already set, React app will handle routing -->';
+      ? '<!-- Bot detected - serving static HTML for crawler - no redirect needed -->' 
+      : `<script>
+          // For regular browsers, serve the HTML but indicate this is a server-rendered preview
+          // The meta tags are already in the DOM for WhatsApp to read
+          // Note: This page will redirect, but meta tags are already read by crawlers
+          if (typeof window !== 'undefined' && window.location && !window.location.search.includes('_preview=1')) {
+            // Don't redirect - just let the page render with meta tags
+            // React app should handle this route, but if we're here, serve the preview HTML
+          }
+        </script>`;
 
     // Generate HTML with proper OG meta tags
     // IMPORTANT: Meta tags must be in the <head> and before any redirect
