@@ -4,12 +4,27 @@
  */
 
 export default async function handler(req, res) {
+  // Log immediately to ensure function is being called
+  // IMPORTANT: In Vercel, logs appear in the Functions tab, not frontend logs
+  console.log('=== PRODUCT PREVIEW FUNCTION CALLED ===');
+  console.log(`[Product Preview] Method: ${req.method}`);
+  console.log(`[Product Preview] URL: ${req.url}`);
+  console.log(`[Product Preview] Path: ${req.url}`);
+  
   // Ensure we always return a response
   try {
-    const { slug } = req.query;
+    // Extract slug from query or URL path
+    // Vercel routes: /p/:slug -> /api/p/:slug, slug is in req.query.slug
+    const slug = req.query?.slug;
+    console.log(`[Product Preview] Query params:`, JSON.stringify(req.query));
+    console.log(`[Product Preview] Slug from query: ${slug}`);
+    console.log(`[Product Preview] Full request object keys:`, Object.keys(req));
 
     if (!slug) {
-      const errorHtml = `<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Product not found - No slug provided</h1></body></html>`;
+      console.error('[Product Preview] ERROR: No slug provided');
+      console.error('[Product Preview] Request URL:', req.url);
+      console.error('[Product Preview] Request query:', req.query);
+      const errorHtml = `<!DOCTYPE html><html><head><title>Error</title></head><body><h1>Product not found - No slug provided</h1><p>URL: ${req.url}</p><p>Query: ${JSON.stringify(req.query)}</p><p>Check Vercel Functions tab for logs</p></body></html>`;
       return res.status(404).send(errorHtml);
     }
 
@@ -117,31 +132,99 @@ export default async function handler(req, res) {
         }
       }
       
-      // If both failed, return error HTML
+      // If both failed, return error HTML with visible content
       if (!product) {
         const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+        const errorTextForDisplay = errorText || 'Unknown error';
+        console.error(`[Product Preview] FAILED: Could not fetch product for slug: ${slug}`);
+        console.error(`[Product Preview] Primary API: ${apiUrl}`);
+        console.error(`[Product Preview] Error: ${errorTextForDisplay}`);
+        
         const errorHtml = `<!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Product Not Found</title>
     <meta property="og:title" content="Product Not Found">
-    <meta property="og:description" content="The requested product could not be found. Please ensure REACT_APP_BACKEND_URL or BACKEND_URL environment variable is set in Vercel.">
+    <meta property="og:description" content="The requested product could not be found">
     <meta property="og:image" content="${baseUrl}/logo512.png">
     <meta property="og:url" content="${baseUrl}/p/${slug}">
     <meta property="og:type" content="product">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 40px 20px; 
+            background: #f5f5f5; 
+            margin: 0; 
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .error-box {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #d32f2f; margin-top: 0; }
+        p { color: #666; line-height: 1.6; margin: 10px 0; }
+        code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+    </style>
 </head>
 <body>
-    <h1>Product Not Found</h1>
-    <p>Error: ${errorText}</p>
-    <p>API URL tried: ${apiUrl}</p>
-    <p>Please ensure REACT_APP_BACKEND_URL or BACKEND_URL environment variable is set in Vercel.</p>
+    <div class="error-box">
+        <h1>❌ Product Not Found</h1>
+        <p><strong>Slug:</strong> ${slug}</p>
+        <p><strong>Error:</strong> ${escapeHtml(errorTextForDisplay)}</p>
+        <p><strong>API URL tried:</strong> <code>${apiUrl}</code></p>
+        <p><strong>Backend URL:</strong> <code>${backendUrl}</code></p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        <p><strong>To fix this:</strong></p>
+        <ul>
+            <li>Ensure <code>REACT_APP_BACKEND_URL</code> is set in Vercel environment variables</li>
+            <li>Check that the product exists in your database</li>
+            <li>Verify the backend API is accessible at: ${backendUrl}</li>
+        </ul>
+        <p><a href="/">← Back to home</a></p>
+    </div>
 </body>
 </html>`;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
         return res.status(404).send(errorHtml);
       }
     }
-    console.log(`[Product Preview] Product loaded: ${product.title}, image_url: ${product.image_url || 'none'}`);
+    
+    // Ensure product exists and has required fields
+    if (!product || !product.title) {
+      console.error(`[Product Preview] ERROR: Product loaded but missing required fields`);
+      console.error(`[Product Preview] Product data:`, JSON.stringify(product, null, 2));
+      const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
+      const errorHtml = `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invalid Product Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px 20px; background: #f5f5f5; margin: 0; color: #333; }
+        .error-box { background: white; padding: 30px; border-radius: 8px; max-width: 600px; margin: 0 auto; }
+        h1 { color: #d32f2f; }
+    </style>
+</head>
+<body>
+    <div class="error-box">
+        <h1>Invalid Product Data</h1>
+        <p>The product was found but has invalid data. Check your backend response.</p>
+        <p><strong>Slug:</strong> ${slug}</p>
+    </div>
+</body>
+</html>`;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(500).send(errorHtml);
+    }
+    
+    console.log(`[Product Preview] Product loaded successfully: ${product.title}, image_url: ${product.image_url || 'none'}`);
 
     // Extract image URL and handle YouTube videos
     const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
@@ -266,12 +349,49 @@ export default async function handler(req, res) {
     
     <!-- Visible content for crawlers (some crawlers read body content) -->
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; margin: 0; }
-        .product-preview { background: white; padding: 20px; border-radius: 8px; max-width: 600px; margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .product-image { width: 100%; max-width: 500px; height: auto; border-radius: 4px; display: block; margin: 20px auto; }
-        h1 { color: #333; margin-top: 0; }
-        p { color: #666; line-height: 1.6; }
-        a { color: #007bff; text-decoration: none; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #f5f5f5 !important; 
+            margin: 0; 
+            color: #333 !important;
+            min-height: 100vh;
+        }
+        .product-preview { 
+            background: white !important; 
+            padding: 30px; 
+            border-radius: 8px; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        .product-image { 
+            width: 100%; 
+            max-width: 500px; 
+            height: auto; 
+            border-radius: 4px; 
+            display: block; 
+            margin: 20px auto; 
+        }
+        h1 { 
+            color: #333 !important; 
+            margin-top: 0; 
+            font-size: 24px;
+        }
+        p { 
+            color: #666 !important; 
+            line-height: 1.6; 
+            margin: 10px 0;
+        }
+        a { 
+            color: #007bff !important; 
+            text-decoration: none; 
+            font-weight: 500;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
     </style>
     
     <!-- Redirect script (only for regular browsers, not crawlers) -->
@@ -282,8 +402,11 @@ export default async function handler(req, res) {
     <div class="product-preview">
         <h1>${escapeHtml(product.title)}</h1>
         <p>${escapeHtml(fullDescription)}</p>
-        <img src="${escapeHtml(productImage)}" alt="${escapeHtml(product.title)}" class="product-image" />
+        ${productImage ? `<img src="${escapeHtml(productImage)}" alt="${escapeHtml(product.title)}" class="product-image" onerror="this.style.display='none';" />` : ''}
+        <p><strong>Price:</strong> ${product.price} ${product.currency}</p>
         <p><a href="/p/${slug}">View Product →</a></p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="font-size: 12px; color: #999;">This is a preview page for WhatsApp/Facebook crawlers. For the full product page, <a href="/p/${slug}">click here</a>.</p>
     </div>
 </body>
 </html>`;
@@ -311,8 +434,18 @@ export default async function handler(req, res) {
     
     return res.status(200).send(html);
   } catch (error) {
-    console.error('[Product Preview] Error:', error.message);
-    console.error('[Product Preview] Stack:', error.stack);
+    // Log detailed error information
+    console.error('=== PRODUCT PREVIEW ERROR ===');
+    console.error('[Product Preview] Error message:', error.message);
+    console.error('[Product Preview] Error stack:', error.stack);
+    console.error('[Product Preview] Error name:', error.name);
+    console.error('[Product Preview] Request URL:', req.url);
+    console.error('[Product Preview] Request query:', JSON.stringify(req.query));
+    console.error('[Product Preview] Environment variables:', {
+      REACT_APP_BACKEND_URL: process.env.REACT_APP_BACKEND_URL ? 'SET' : 'NOT SET',
+      BACKEND_URL: process.env.BACKEND_URL ? 'SET' : 'NOT SET',
+      VERCEL_URL: process.env.VERCEL_URL || 'NOT SET'
+    });
     
     // Return a basic HTML page with default meta tags so WhatsApp can see something
     const baseUrl = req.headers.host ? `https://${req.headers.host}` : 'https://boost-tribe-pro.vercel.app';
@@ -322,9 +455,9 @@ export default async function handler(req, res) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Product</title>
-    <meta property="og:title" content="Product">
-    <meta property="og:description" content="Product page">
+    <title>Product Error</title>
+    <meta property="og:title" content="Product Error">
+    <meta property="og:description" content="Error loading product page">
     <meta property="og:image" content="${baseUrl}/logo512.png">
     <meta property="og:url" content="${baseUrl}/p/${slug}">
     <meta property="og:type" content="product">
@@ -332,7 +465,9 @@ export default async function handler(req, res) {
 <body>
     <h1>Error loading product</h1>
     <p>Error: ${error.message}</p>
-    <p>Please try again later.</p>
+    <p>Check Vercel Functions tab (not frontend logs) for detailed logs.</p>
+    <p>Slug: ${slug}</p>
+    <p>URL: ${req.url}</p>
 </body>
 </html>`;
     return res.status(500).send(errorHtml);
