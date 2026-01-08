@@ -24,19 +24,28 @@ export default async function handler(req, res) {
 
     // Get backend URL from environment - ensure it doesn't have trailing slash
     // In Vercel, we need to use the backend URL from environment variables
-    // If not set, try to infer from the request host
-    let backendUrl = process.env.REACT_APP_BACKEND_URL || process.env.BACKEND_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : (req.headers.host ? `https://${req.headers.host}` : 'http://localhost:8001');
-    
-    // If backend URL points to Vercel frontend, try to use the actual backend URL
-    // This might need to be set as an environment variable in Vercel dashboard
-    if (backendUrl.includes('vercel.app') && !process.env.REACT_APP_BACKEND_URL && !process.env.BACKEND_URL) {
-      // Try common backend patterns or use API route
-      backendUrl = backendUrl.replace(/\.vercel\.app$/, '-backend.vercel.app');
+    // Priority: REACT_APP_BACKEND_URL > BACKEND_URL > fallback to same domain
+    let backendUrl;
+    if (process.env.REACT_APP_BACKEND_URL) {
+      backendUrl = process.env.REACT_APP_BACKEND_URL;
+    } else if (process.env.BACKEND_URL) {
+      backendUrl = process.env.BACKEND_URL;
+    } else if (process.env.VERCEL_URL) {
+      // If on Vercel but no backend URL set, try same domain
+      backendUrl = `https://${process.env.VERCEL_URL}`;
+    } else if (req.headers.host) {
+      // Fallback to same domain as request
+      backendUrl = `https://${req.headers.host}`;
+    } else {
+      // Last resort: localhost (shouldn't happen in production)
+      backendUrl = 'http://localhost:8001';
     }
     
     backendUrl = backendUrl.replace(/\/$/, ''); // Remove trailing slash
+    
+    // If backend URL points to Vercel frontend domain and no explicit backend URL is set,
+    // the backend API routes might be on the same domain (monorepo setup)
+    // In that case, we'll use the same domain API route (handled in the fallback logic below)
     
     // Build API URL - try backend API first, fallback to same domain API route
     let apiUrl = `${backendUrl}/api/catalog/public/${slug}`;
