@@ -239,19 +239,19 @@ const CheckoutPage = () => {
                 {(() => {
                   const imageUrl = getProductImageUrl(product.image_url);
                   return imageUrl ? (
-                    <img
+                  <img
                       src={imageUrl}
-                      alt={product.title}
-                      className="w-24 h-24 object-cover rounded-lg"
+                    alt={product.title}
+                    className="w-24 h-24 object-cover rounded-lg"
                       onError={(e) => {
                         e.target.onerror = null;
                         e.target.src = `${window.location.origin}/logo512.png`;
                       }}
-                    />
-                  ) : (
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-lg flex items-center justify-center">
-                      <ShoppingCart className="h-10 w-10 text-primary/50" />
-                    </div>
+                  />
+                ) : (
+                  <div className="w-24 h-24 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-lg flex items-center justify-center">
+                    <ShoppingCart className="h-10 w-10 text-primary/50" />
+                  </div>
                   );
                 })()}
                 <div className="flex-1">

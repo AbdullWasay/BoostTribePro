@@ -92,14 +92,14 @@ const Register = () => {
       
       // Show welcome message only if no plan_id (normal registration)
       if (!planId) {
-        const welcomeMessage = result.user.role === 'admin' 
-          ? t('auth.register.welcomeAdmin', { name: result.user.name })
-          : t('auth.register.welcomeUser', { name: result.user.name });
-        
-        toast({
-          title: `✅ ${t('auth.register.success')}`,
-          description: welcomeMessage,
-        });
+      const welcomeMessage = result.user.role === 'admin' 
+        ? t('auth.register.welcomeAdmin', { name: result.user.name })
+        : t('auth.register.welcomeUser', { name: result.user.name });
+      
+      toast({
+        title: `✅ ${t('auth.register.success')}`,
+        description: welcomeMessage,
+      });
       }
       
       // If plan_id is provided, trigger payment flow immediately after registration

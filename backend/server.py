@@ -1408,7 +1408,7 @@ async def get_settings(user_id: str = None):
         else:
             # Absolute fallback if no admin exists yet
             user_id = "global_settings"
-
+    
     settings = await db.settings.find_one({"user_id": user_id}, {"_id": 0})
     if not settings:
         settings = {"user_id": user_id}
@@ -1427,7 +1427,7 @@ async def get_settings(user_id: str = None):
     for key, env_var in sensitive_keys.items():
         if not settings.get(key):
             settings[key] = os.environ.get(env_var, '')
-
+    
     if isinstance(settings.get('updated_at'), str):
         settings['updated_at'] = datetime.fromisoformat(settings['updated_at'])
     elif 'updated_at' not in settings:
@@ -1819,7 +1819,7 @@ async def update_admin_settings(settings_update: AdminSettingsUpdate, current_us
         ]
         for key in sensitive_keys:
             update_data.pop(key, None)
-            
+    
     for key, value in update_data.items():
         setattr(current_settings, key, value)
     
@@ -6896,14 +6896,14 @@ async def get_payment_status(session_id: str):
             
             # Handle reservation payments
             elif entity_type == "reservation":
-                # Check if reservation already created (prevent duplicates)
-                existing_reservation = await db.reservations.find_one({
-                    "payment_intent_id": session_id
-                }, {"_id": 0})
-                
-                if not existing_reservation:
-                    # Create reservation from metadata
-                    item = await db.catalog_items.find_one({"id": metadata["catalog_item_id"]}, {"_id": 0})
+            # Check if reservation already created (prevent duplicates)
+            existing_reservation = await db.reservations.find_one({
+                "payment_intent_id": session_id
+            }, {"_id": 0})
+            
+            if not existing_reservation:
+                # Create reservation from metadata
+                item = await db.catalog_items.find_one({"id": metadata["catalog_item_id"]}, {"_id": 0})
                 
                 if item:
                     reservation = Reservation(
@@ -7274,14 +7274,14 @@ async def get_product_page_html(slug: str, request: Request):
     # Process image URL - ensure it's absolute and handle different types
     if product_image:
         image_url = product_image.strip()
-        
+    
         # Check if it's a YouTube URL and extract thumbnail
         youtube_match = re.search(r'(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([^&\?\s]+)', image_url)
-        if youtube_match:
-            # Extract YouTube video ID and use YouTube thumbnail
-            video_id = youtube_match.group(1)
+    if youtube_match:
+        # Extract YouTube video ID and use YouTube thumbnail
+        video_id = youtube_match.group(1)
             # Use maxresdefault for best quality (1280x720), fallback available
-            product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+        product_image = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
             # Log for debugging
             logger.info(f"YouTube thumbnail extracted for product {slug}: {product_image}")
         # Check if it's a Vimeo URL
@@ -7379,7 +7379,7 @@ async def get_product_page_html(slug: str, request: Request):
         // Crawlers typically read the first 100KB, so meta tags are read before redirect
         setTimeout(function() {{
             if (window.location.hash !== '#no-redirect') {{
-                window.location.href = '/p/{slug}';
+        window.location.href = '/p/{slug}';
             }}
         }}, 500);
     </script>

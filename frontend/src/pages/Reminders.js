@@ -448,7 +448,7 @@ const RemindersPage = () => {
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2">
                           <h3 className="text-base sm:text-lg font-semibold break-words">{reminder.title}</h3>
                           <div className="shrink-0">
-                            {getStatusBadge(reminder.status)}
+                          {getStatusBadge(reminder.status)}
                           </div>
                         </div>
                         
